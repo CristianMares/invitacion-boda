@@ -1,10 +1,11 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, XCircle, Users, AlertTriangle, ShieldX, PartyPopper } from 'lucide-react';
 
-export default function ScanPageWrapper() {
+// 1. Componente que consume los parámetros
+function ScanContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const success = searchParams.get('success');
@@ -15,7 +16,16 @@ export default function ScanPageWrapper() {
   return <QRScannerView />;
 }
 
-// 1. VISTA DE ESCANEO
+// 2. Exportación con el Límite de Suspenso (Obligatorio para Vercel)
+export default function ScanPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-neutral-950 flex items-center justify-center text-amber-500 font-mono">Iniciando escáner...</div>}>
+      <ScanContent />
+    </Suspense>
+  );
+}
+
+// 3. VISTA DE ESCANEO
 function QRScannerView() {
   const router = useRouter();
   
@@ -32,7 +42,6 @@ function QRScannerView() {
           <Scanner 
             onScan={(result) => {
               if (result && result.length > 0) {
-                // Navega directamente a la URL que trae el QR (/admin/scan?id=UUID)
                 router.push(result[0].rawValue);
               }
             }}
@@ -45,22 +54,10 @@ function QRScannerView() {
   );
 }
 
-// 2. VISTA DE VALIDACIÓN (Día del Evento)
+// 4. VISTA DE VALIDACIÓN
 function CheckInView({ id }: { id: string }) {
-  const [guest, setGuest] = useState<any>(null);
-  const [status, setStatus] = useState('loading');
   const router = useRouter();
 
-  useEffect(() => {
-    // Para simplificar sin Server Actions complejas en un Client Component, 
-    // usaremos una llamada a la API nativa de SQL directa si pudiéramos, 
-    // pero como no tenemos una API pública de consulta por ID, 
-    // llamaremos a un Server Action embebido o haremos un redirect.
-    // Dado que necesitamos leer DB, lo ideal era Server Component.
-    // Hack rápido: Redirigimos a una sub-ruta de validación o creamos un endpoint.
-  }, [id]);
-
-  // COMO ESTO REQUIERE BASE DE DATOS, VAMOS A CREAR UN ACTION RAPIDO
   const handleCheckIn = async () => {
     try {
       await fetch('/api/admin/checkin', {
@@ -74,7 +71,6 @@ function CheckInView({ id }: { id: string }) {
     }
   };
 
-  // En lugar de sobre-complicar el componente cliente, te doy el diseño final:
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
       <div className="bg-neutral-900/80 p-8 rounded-[2rem] border border-amber-500/30 text-center max-w-md w-full shadow-2xl backdrop-blur-xl">
@@ -93,7 +89,7 @@ function CheckInView({ id }: { id: string }) {
   );
 }
 
-// 3. VISTA DE ÉXITO
+// 5. VISTA DE ÉXITO
 function SuccessView() {
   const router = useRouter();
   return (
@@ -108,4 +104,4 @@ function SuccessView() {
       </div>
     </div>
   );
-} 
+}
