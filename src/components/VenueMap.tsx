@@ -1,0 +1,45 @@
+'use client';
+interface Table { id: string; table_number: number; pos_x: number; pos_y: number; capacity: number; }
+interface Decoration { id: string; label: string; pos_x: number; pos_y: number; width: number; height: number; }
+
+export default function VenueMap({ assignedTableId, tables, decorations }: { assignedTableId: string | null, tables: Table[], decorations: Decoration[] }) {
+  const targetTable = tables.find(t => t.id === assignedTableId);
+
+  return (
+    <div className="w-full bg-neutral-950 p-4 md:p-6 rounded-[2rem] border border-white/5 relative shadow-inner">
+      <div className="text-center mb-4">
+        <h4 className="text-amber-500 text-[10px] font-bold font-mono tracking-[0.2em] uppercase">Plano del Salón</h4>
+        {targetTable ? <p className="text-white font-serif text-lg">MESA {targetTable.table_number}</p> : <p className="text-red-400 font-serif text-sm">Sin mesa asignada</p>}
+      </div>
+
+      <div className="w-full aspect-[16/10] bg-[#0a0a0a] border border-neutral-900 rounded-xl md:rounded-2xl relative shadow-2xl overflow-hidden">
+        {decorations.map(d => (
+          <div key={d.id} className="absolute bg-[#111] border-2 border-neutral-800/50 rounded-md flex items-center justify-center pointer-events-none"
+               style={{ left: `${d.pos_x}%`, top: `${d.pos_y}%`, transform: 'translate(-50%, -50%)', width: `${d.width}%`, height: `${d.height}%` }}>
+            <span className="text-[8px] md:text-xs font-mono font-bold text-neutral-600 uppercase text-center leading-tight">{d.label}</span>
+          </div>
+        ))}
+
+        {tables.map(t => {
+          const isAssigned = t.id === assignedTableId;
+          return (
+            <div key={t.id} className={`absolute flex items-center justify-center rounded-full transition-all ${isAssigned ? 'z-20' : 'z-10'}`}
+                 style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', width: '10%', height: '16%' }}>
+              
+              {isAssigned && (
+                <>
+                  <div className="absolute inset-[-10px] md:inset-[-15px] bg-amber-500/20 rounded-full animate-pulse"></div>
+                  <div className="absolute inset-[-4px] md:inset-[-8px] border-2 border-amber-500 border-dashed rounded-full animate-[spin_5s_linear_infinite]"></div>
+                </>
+              )}
+
+              <div className={`w-full h-full rounded-full flex items-center justify-center border-2 md:border-4 ${isAssigned ? 'bg-amber-600 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-[#171717] border-neutral-700'}`}>
+                <span className={`font-serif font-bold ${isAssigned ? 'text-black text-sm md:text-xl' : 'text-neutral-500 text-xs md:text-lg'}`}>{t.table_number}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
