@@ -81,14 +81,20 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
         </div>
       </div>
 
-      <div className="flex-1 bg-[#0a0a0a] overflow-hidden flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-5xl aspect-[16/10] bg-neutral-950 border-2 border-neutral-900 rounded-3xl relative shadow-2xl overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
+      {/* LIENZO SCROLLABLE */}
+      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10">
+        <div className="w-[1200px] h-[800px] bg-[#F3CBAF] border-2 border-neutral-900 rounded-lg relative shadow-2xl mx-auto">
+          <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
           
           {decorations.map(d => (
-            <div key={d.id} className="absolute bg-[#111] border-2 border-neutral-800/50 rounded-lg flex items-center justify-center pointer-events-none"
-                 style={{ left: `${d.pos_x}%`, top: `${d.pos_y}%`, transform: 'translate(-50%, -50%)', width: `${d.width}%`, height: `${d.height}%`, zIndex: 5 }}>
-              <span className="text-[10px] md:text-xs font-mono font-bold text-neutral-600 text-center uppercase">{d.label}</span>
+            <div key={d.id} className="absolute border border-black/20 flex items-center justify-center pointer-events-none"
+                 style={{ 
+                   left: `${d.pos_x}%`, top: `${d.pos_y}%`, 
+                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, 
+                   width: `${d.width}%`, height: `${d.height}%`,
+                   backgroundColor: d.bg_color || '#111111', zIndex: 5 
+                 }}>
+              <span className="text-xs font-mono font-bold text-black/60 text-center uppercase">{d.label}</span>
             </div>
           ))}
 
@@ -96,15 +102,15 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
             const occupants = people.filter(p => p.table_id === t.id);
             const isFull = occupants.length >= t.capacity;
             const isOver = occupants.length > t.capacity;
-            const ringColor = isOver ? 'border-red-500' : isFull ? 'border-amber-500' : 'border-emerald-500/30';
-            const bgColor = isOver ? 'bg-red-500/20' : isFull ? 'bg-amber-500/20' : 'bg-neutral-900';
+            const ringColor = isOver ? 'border-red-500' : isFull ? 'border-amber-500' : 'border-[#0E3D4D]';
+            const bgColor = isOver ? 'bg-red-500/90' : isFull ? 'bg-amber-500/90' : 'bg-[#165A72]';
 
             return (
               <div key={t.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, t.id)} onClick={() => setSelectedTable(selectedTable === t.id ? null : t.id)}
-                   className={`absolute w-12 h-12 md:w-16 md:h-16 border-2 rounded-full flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 ${ringColor} ${bgColor}`}
+                   className={`absolute w-16 h-16 border-[3px] rounded-full flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-110 ${ringColor} ${bgColor}`}
                    style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', zIndex: selectedTable === t.id ? 60 : 10 }}>
-                <span className="text-white font-serif font-bold text-sm md:text-lg pointer-events-none">{t.table_number}</span>
-                <span className={`text-[8px] md:text-[10px] font-mono font-bold pointer-events-none ${isOver ? 'text-red-400' : 'text-neutral-300'}`}>{occupants.length}/{t.capacity}</span>
+                <span className="text-white font-serif font-bold text-lg pointer-events-none">{t.table_number}</span>
+                <span className="text-[9px] font-mono font-bold pointer-events-none text-white/80">{occupants.length}/{t.capacity}</span>
 
                 {selectedTable === t.id && (
                   <div className="absolute top-full mt-3 w-48 md:w-64 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[100] cursor-default" onClick={(e) => e.stopPropagation()}>

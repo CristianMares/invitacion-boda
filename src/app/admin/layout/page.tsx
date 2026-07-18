@@ -54,7 +54,7 @@ export default function LayoutBuilder() {
   };
 
   const addDecoration = () => {
-    setDecorations([...decorations, { id: generateUUID(), type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10 }]);
+    setDecorations([...decorations, { id: generateUUID(), type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#111111', rotation: 0 }]);
   };
 
   const saveLayout = async () => {
@@ -70,14 +70,16 @@ export default function LayoutBuilder() {
   if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando motor gráfico...</div>;
 
   return (
-    <div className="h-full flex flex-col md:flex-row">
-      {/* PANEL DE EDICIÓN */}
-      <div className="w-full md:w-80 bg-neutral-950 border-r border-white/5 flex flex-col h-[40vh] md:h-full z-20 shadow-2xl">
+    <div className="h-full flex flex-col md:flex-row bg-black">
+      
+      {/* PANEL LATERAL */}
+      <div className="w-full md:w-96 bg-neutral-950 border-r border-white/5 flex flex-col h-[45vh] md:h-full z-20 shadow-2xl flex-shrink-0">
         <div className="flex border-b border-white/5">
           <button onClick={() => setActiveTab('tables')} className={`flex-1 py-4 text-xs font-bold uppercase ${activeTab === 'tables' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Mesas</button>
           <button onClick={() => setActiveTab('decor')} className={`flex-1 py-4 text-xs font-bold uppercase ${activeTab === 'decor' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Áreas</button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-neutral-800">
           {activeTab === 'tables' ? (
             <>
               <button onClick={addTable} className="w-full bg-neutral-900 border border-white/10 py-3 rounded-xl flex justify-center gap-2 hover:bg-white hover:text-black font-bold mb-4"><Plus size={18} /> Añadir Mesa</button>
@@ -86,8 +88,8 @@ export default function LayoutBuilder() {
                   <div>
                     <span className="text-sm font-bold text-white">Mesa {t.table_number}</span>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] text-neutral-500">CAPACIDAD:</span>
-                      <input type="number" value={t.capacity} onChange={(e) => setTables(tables.map(tbl => tbl.id === t.id ? { ...tbl, capacity: Number(e.target.value) } : tbl))} className="w-16 bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" />
+                      <span className="text-[10px] text-neutral-500">CAP:</span>
+                      <input type="number" value={t.capacity} onChange={(e) => setTables(tables.map(tbl => tbl.id === t.id ? { ...tbl, capacity: Number(e.target.value) } : tbl))} className="w-16 bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white outline-none" />
                     </div>
                   </div>
                   <button onClick={() => setTables(tables.filter(x => x.id !== t.id))} className="text-neutral-600 hover:text-red-500"><Trash2 size={16} /></button>
@@ -99,13 +101,15 @@ export default function LayoutBuilder() {
               <button onClick={addDecoration} className="w-full bg-neutral-900 border border-white/10 py-3 rounded-xl flex justify-center gap-2 hover:bg-white hover:text-black font-bold mb-4"><BoxSelect size={18} /> Añadir Área</button>
               {decorations.map(d => (
                 <div key={d.id} className="bg-black border border-white/5 p-4 rounded-xl space-y-3">
-                  <div className="flex justify-between items-center">
-                    <input type="text" value={d.label} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, label: e.target.value } : dec))} className="bg-transparent border-b border-neutral-800 text-sm font-bold w-2/3 text-white" placeholder="Nombre" />
-                    <button onClick={() => setDecorations(decorations.filter(x => x.id !== d.id))} className="text-neutral-600 hover:text-red-500"><Trash2 size={16} /></button>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <input type="text" value={d.label} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, label: e.target.value } : dec))} className="bg-transparent text-sm font-bold w-full text-white outline-none" placeholder="Nombre" />
+                    <button onClick={() => setDecorations(decorations.filter(x => x.id !== d.id))} className="text-neutral-600 hover:text-red-500 ml-2"><Trash2 size={16} /></button>
                   </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1"><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
-                    <div className="flex-1"><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
+                    <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
+                    <div><span className="text-[9px] text-neutral-500">COLOR HEX</span><input type="text" value={d.bg_color || '#111111'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
+                    <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
                   </div>
                 </div>
               ))}
@@ -117,26 +121,33 @@ export default function LayoutBuilder() {
         </div>
       </div>
 
-      {/* LIENZO RESPONSIVO */}
-      <div className="flex-1 bg-[#0a0a0a] overflow-hidden flex items-center justify-center p-4 md:p-8" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
-        <div ref={containerRef} className="w-full max-w-5xl aspect-[16/10] bg-neutral-950 border-2 border-dashed border-neutral-800 rounded-3xl relative shadow-2xl overflow-hidden touch-none">
-          <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"></div>
+      {/* LIENZO SCROLLABLE (Solución a recortes en móvil) */}
+      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
+        <div ref={containerRef} className="w-[1200px] h-[800px] bg-[#F3CBAF] border-2 border-dashed border-neutral-800 rounded-lg relative shadow-2xl touch-none mx-auto origin-top-left">
+          <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
 
           {decorations.map(d => (
-            <div key={d.id} onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)} className="absolute bg-[#111] border-2 border-neutral-800 rounded-lg flex items-center justify-center cursor-grab active:cursor-grabbing hover:border-neutral-500 transition-colors"
-                 style={{ left: `${d.pos_x}%`, top: `${d.pos_y}%`, transform: 'translate(-50%, -50%)', width: `${d.width}%`, height: `${d.height}%`, zIndex: draggingItem?.id === d.id ? 40 : 5 }}>
-              <span className="text-[10px] md:text-sm font-mono font-bold text-neutral-500 uppercase pointer-events-none text-center">{d.label}</span>
+            <div key={d.id} onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)} className="absolute border border-black/20 flex items-center justify-center cursor-grab active:cursor-grabbing hover:ring-2 ring-white transition-shadow"
+                 style={{ 
+                   left: `${d.pos_x}%`, top: `${d.pos_y}%`, 
+                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, 
+                   width: `${d.width}%`, height: `${d.height}%`, 
+                   backgroundColor: d.bg_color || '#111111',
+                   zIndex: draggingItem?.id === d.id ? 40 : 5 
+                 }}>
+              <span className="text-xs font-mono font-bold text-black/60 uppercase pointer-events-none text-center drop-shadow-md">{d.label}</span>
             </div>
           ))}
 
           {tables.map(t => (
-            <div key={t.id} onPointerDown={(e) => handlePointerDown(t.id, 'table', e)} className="absolute w-12 h-12 md:w-16 md:h-16 bg-neutral-900 border-2 border-amber-500/50 rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:border-amber-500 shadow-xl"
+            <div key={t.id} onPointerDown={(e) => handlePointerDown(t.id, 'table', e)} className="absolute w-16 h-16 bg-[#165A72] border-[3px] border-[#0E3D4D] rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:ring-4 ring-amber-500 shadow-xl"
                  style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', zIndex: draggingItem?.id === t.id ? 50 : 10 }}>
-              <span className="text-white font-serif font-bold text-sm md:text-lg pointer-events-none">{t.table_number}</span>
+              <span className="text-white font-serif font-bold text-lg pointer-events-none">{t.table_number}</span>
             </div>
           ))}
         </div>
       </div>
+
     </div>
   );
 }

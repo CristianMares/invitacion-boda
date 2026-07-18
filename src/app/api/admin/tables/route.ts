@@ -34,11 +34,11 @@ export async function POST(request: Request) {
     }
 
     // 2. Guardar Decoraciones
-    await sql`DELETE FROM decorations`; // Limpieza total y reescritura para evitar conflictos
+    await sql`DELETE FROM decorations`;
     for (const d of decorations) {
       await sql`
-        INSERT INTO decorations (id, type, label, pos_x, pos_y, width, height)
-        VALUES (${d.id}, ${d.type}, ${d.label}, ${d.pos_x}, ${d.pos_y}, ${d.width}, ${d.height})
+        INSERT INTO decorations (id, type, label, pos_x, pos_y, width, height, bg_color, rotation)
+        VALUES (${d.id}, ${d.type}, ${d.label}, ${d.pos_x}, ${d.pos_y}, ${d.width}, ${d.height}, ${d.bg_color || '#111111'}, ${d.rotation || 0})
       `;
     }
 
