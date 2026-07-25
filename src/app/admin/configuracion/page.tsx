@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Calendar, MapPin, Gift, Clock, ShieldCheck, Shirt, ArrowUp, ArrowDown, Eye, X, Type } from 'lucide-react';
+import { Save, Plus, Trash2, Calendar, MapPin, Gift, Clock, ShieldCheck, Shirt, ArrowUp, ArrowDown, Eye, X, Type, MessageSquare, Send } from 'lucide-react';
 import Countdown from '@/components/Countdown';
 import CalendarButton from '@/components/CalendarButton';
 import Timeline from '@/components/Timeline';
@@ -12,8 +12,8 @@ export default function AdminConfiguracion() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [activePreviewModal, setActivePreviewModal] = useState<string | null>(null);
 
-  const [heroInfo, setHeroInfo] = useState({ initials: 'M & X', subtitle: 'Nuestra Boda', description: 'Nos casamos, y queremos que seas parte de nuestra historia.' });
-  const [weddingDate, setWeddingDate] = useState('2026-12-31T20:00:00');
+  const [heroInfo, setHeroInfo] = useState({ initials: '', subtitle: '', description: '' });
+  const [weddingDate, setWeddingDate] = useState('');
   const [venueInfo, setVenueInfo] = useState({ name: '', location: '', maps_url: '' });
   const [dressCode, setDressCode] = useState({ title: '', note: '', colors: [] as string[] });
   const [giftRegistry, setGiftRegistry] = useState({
@@ -21,6 +21,10 @@ export default function AdminConfiguracion() {
     links: [] as Array<{ name: string, url: string }>
   });
   const [itinerary, setItinerary] = useState([] as Array<{ time: string, title: string, desc: string }>);
+  const [whatsappInfo, setWhatsappInfo] = useState({
+    template: '¡Hola {nombre}! Tu pase para la boda de {iniciales} está listo. Consulta tu código QR y mesa asignada aquí: {link}'
+  });
+  const [testPhone, setTestPhone] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/config').then(res => res.json()).then(data => {
@@ -31,6 +35,7 @@ export default function AdminConfiguracion() {
         if (data.config.dress_code) setDressCode(data.config.dress_code);
         if (data.config.gift_registry) setGiftRegistry(data.config.gift_registry);
         if (data.config.itinerary) setItinerary(data.config.itinerary);
+        if (data.config.whatsapp_info) setWhatsappInfo(data.config.whatsapp_info);
       }
       setLoading(false);
     });
@@ -84,22 +89,16 @@ export default function AdminConfiguracion() {
     setGiftRegistry({ ...giftRegistry, links: list });
   };
 
-  // Formato para la previsualización de fecha
-  const dateObj = new Date(weddingDate);
-  const formattedDateText = isNaN(dateObj.getTime())
-    ? ''
-    : dateObj.toLocaleDateString('es-MX', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+  const sendTestWhatsapp = () => {
+    if (!testPhone) return alert('Ingresa un número de prueba (10 dígitos)');
+    const sampleMsg = whatsappInfo.template
+      .replace('{nombre}', 'Invitado Prueba')
+      .replace('{iniciales}', heroInfo.initials || 'M & X')
+      .replace('{link}', 'https://invitacion-boda-bbmh.vercel.app/ticket/demo');
 
-  const capitalizedDateText = formattedDateText
-    ? formattedDateText.charAt(0).toUpperCase() + formattedDateText.slice(1)
-    : '';
+    const url = `https://wa.me/521${testPhone}?text=${encodeURIComponent(sampleMsg)}`;
+    window.open(url, '_blank');
+  };
 
   if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando CMS...</div>;
 
@@ -110,7 +109,7 @@ export default function AdminConfiguracion() {
         <div className="flex items-center justify-between border-b border-white/5 pb-6">
           <div>
             <h1 className="text-3xl font-serif text-white tracking-wide">Configuración del Sitio</h1>
-            <p className="text-neutral-500 text-xs mt-1 font-mono">Gestión dinámica de textos, fechas, itinerario y regalos.</p>
+            <p className="text-neutral-500 text-xs mt-1 font-mono">Gestión dinámica de textos, fechas, itinerario, regalos y WhatsApp.</p>
           </div>
           <div className="bg-neutral-900 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
             <ShieldCheck className="text-amber-500" size={16} />
@@ -133,11 +132,11 @@ export default function AdminConfiguracion() {
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-mono text-neutral-400 block mb-1">Iniciales Pareja (Ej. M & X):</label>
+              <label className="text-xs font-mono text-neutral-400 block mb-1">Iniciales Pareja:</label>
               <input type="text" value={heroInfo.initials} onChange={(e) => setHeroInfo({ ...heroInfo, initials: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white" />
             </div>
             <div>
-              <label className="text-xs font-mono text-neutral-400 block mb-1">Subtítulo (Ej. Nuestra Boda):</label>
+              <label className="text-xs font-mono text-neutral-400 block mb-1">Subtítulo:</label>
               <input type="text" value={heroInfo.subtitle} onChange={(e) => setHeroInfo({ ...heroInfo, subtitle: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white" />
             </div>
           </div>
@@ -147,7 +146,44 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 2. FECHA Y CUENTA REGRESIVA */}
+        {/* 2. PLANTILLA MENSAJE DE WHATSAPP */}
+        <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><MessageSquare size={18} /> Plantilla de Mensaje WhatsApp</h3>
+            <button onClick={() => saveConfigSection('whatsapp_info', whatsappInfo)} disabled={savingKey === 'whatsapp_info'} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl text-xs flex items-center gap-1.5">
+              <Save size={14} /> Guardar
+            </button>
+          </div>
+          <div>
+            <label className="text-xs font-mono text-neutral-400 block mb-1">
+              Plantilla (Variables automáticas: <code className="text-amber-400">{'{nombre}'}</code>, <code className="text-amber-400">{'{iniciales}'}</code>, <code className="text-amber-400">{'{link}'}</code>):
+            </label>
+            <textarea 
+              rows={3} 
+              value={whatsappInfo.template} 
+              onChange={(e) => setWhatsappInfo({ template: e.target.value })} 
+              className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-amber-200 font-mono focus:border-amber-500 outline-none" 
+            />
+          </div>
+
+          <div className="pt-2 border-t border-white/5 flex flex-col md:flex-row gap-3 items-center">
+            <input 
+              type="tel" 
+              placeholder="Teléfono de prueba (10 dígitos)" 
+              value={testPhone} 
+              onChange={(e) => setTestPhone(e.target.value.replace(/\D/g, ''))} 
+              className="w-full md:w-64 bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" 
+            />
+            <button 
+              onClick={sendTestWhatsapp} 
+              className="w-full md:w-auto px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2"
+            >
+              <Send size={14} /> Probar Mensaje en WhatsApp
+            </button>
+          </div>
+        </section>
+
+        {/* 3. FECHA Y CUENTA REGRESIVA */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Calendar size={18} /> Fecha y Cuenta Regresiva</h3>
@@ -162,11 +198,11 @@ export default function AdminConfiguracion() {
           </div>
           <div>
             <label className="text-xs font-mono text-neutral-400 block mb-1">Fecha ISO Boda:</label>
-            <input type="datetime-local" value={weddingDate.slice(0, 16)} onChange={(e) => setWeddingDate(e.target.value + ':00')} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white focus:border-amber-500 outline-none" />
+            <input type="datetime-local" value={weddingDate ? weddingDate.slice(0, 16) : ''} onChange={(e) => setWeddingDate(e.target.value + ':00')} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white focus:border-amber-500 outline-none" />
           </div>
         </section>
 
-        {/* 3. DRESS CODE Y PALETA DE COLORES */}
+        {/* 4. DRESS CODE Y PALETA DE COLORES */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Shirt size={18} /> Código de Vestimenta</h3>
@@ -228,7 +264,7 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 4. RECEPCIÓN Y UBICACIÓN */}
+        {/* 5. RECEPCIÓN Y UBICACIÓN */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><MapPin size={18} /> Recepción y Ubicación</h3>
@@ -252,7 +288,7 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 5. MESA DE REGALOS */}
+        {/* 6. MESA DE REGALOS */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-6">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Gift size={18} /> Mesa de Regalos</h3>
@@ -308,7 +344,7 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 6. ITINERARIO */}
+        {/* 7. ITINERARIO */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Clock size={18} /> Itinerario (Tarjetas Móviles)</h3>
@@ -364,13 +400,8 @@ export default function AdminConfiguracion() {
               {activePreviewModal === 'date' && (
                 <div className="text-center space-y-6 p-4">
                   <h4 className="text-amber-500 font-mono text-xs uppercase tracking-widest">El Gran Día</h4>
-                  {capitalizedDateText && (
-                    <p className="text-amber-400 font-serif text-xl italic">
-                      {capitalizedDateText}
-                    </p>
-                  )}
                   <Countdown targetDate={weddingDate} />
-                  <CalendarButton />
+                  <CalendarButton weddingDate={weddingDate} title={`Boda de ${heroInfo.initials}`} location={`${venueInfo.name}, ${venueInfo.location}`} />
                 </div>
               )}
 

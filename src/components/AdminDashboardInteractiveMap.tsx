@@ -5,7 +5,13 @@ import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 export default function AdminDashboardInteractiveMap({ decorations, tables, assignedMap, enteredMap }: any) {
   return (
     <div className="w-full h-[600px] bg-[#050505] border border-white/10 rounded-3xl relative shadow-2xl overflow-hidden flex flex-col justify-center items-center">
-      <TransformWrapper initialScale={0.85} minScale={0.3} maxScale={4} centerOnInit>
+      <TransformWrapper 
+        initialScale={0.85} 
+        minScale={0.3} 
+        maxScale={4} 
+        centerOnInit
+        wheel={{ step: 0.03, smoothStep: 0.005 }}
+      >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className="absolute bottom-6 right-6 z-[600] bg-neutral-900/90 border border-white/10 rounded-2xl flex flex-col p-1.5 shadow-2xl backdrop-blur-md">
@@ -46,7 +52,6 @@ export default function AdminDashboardInteractiveMap({ decorations, tables, assi
                       }`}
                       style={{ left: `calc(${t.pos_x}% - 28px)`, top: `calc(${t.pos_y}% - 28px)`, width: '56px', height: '56px' }}
                     >
-                      {/* ANIMACIÓN VERDE ESMERALDA (GENTE EN SALÓN) */}
                       {hasEntered && (
                         <>
                           <div className="absolute inset-[-14px] bg-emerald-500/20 rounded-full animate-pulse" />
@@ -54,7 +59,6 @@ export default function AdminDashboardInteractiveMap({ decorations, tables, assi
                         </>
                       )}
 
-                      {/* ANIMACIÓN DENSIDAD ÁMBAR (SOLO PLANIFICADA) */}
                       {!hasEntered && isAssigned && (
                         <div className="absolute inset-[-6px] border border-amber-500/50 rounded-full animate-pulse" />
                       )}

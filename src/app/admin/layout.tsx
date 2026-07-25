@@ -7,7 +7,7 @@ import { LayoutDashboard, Users, LayoutTemplate, QrCode, Image as ImageIcon, Log
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [initials, setInitials] = useState('M & X');
+  const [initials, setInitials] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/config').then(res => res.json()).then(data => {

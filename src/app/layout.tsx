@@ -15,26 +15,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
-    const rows = await sql`SELECT key, value FROM event_config WHERE key = 'hero_info'`;
-    const hero = rows[0]?.value || {};
+  const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
+  const rows = await sql`SELECT value FROM event_config WHERE key = 'hero_info'`;
+  const hero = rows[0].value;
 
-    const initials = hero.initials || "M & X";
-    const subtitle = hero.subtitle || "Nuestra Boda";
-    const description = hero.description || "Invitación oficial y registro de pases.";
-
-    return {
-      title: `${initials} | ${subtitle}`,
-      description: description,
-    };
-  } catch {
-    return {
-      title: "M & X | Nuestra Boda",
-      description: "Invitación oficial y registro de pases.",
-    };
-  }
+  return {
+    title: `${hero.initials} | ${hero.subtitle}`,
+    description: hero.description,
+  };
 }
 
 export default function RootLayout({

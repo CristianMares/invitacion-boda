@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [initials, setInitials] = useState('M & X');
+  const [initials, setInitials] = useState('');
   const pathname = usePathname();
 
   useEffect(() => {

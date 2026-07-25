@@ -18,11 +18,7 @@ export default async function Home() {
   const configMap: Record<string, any> = {};
   configRows.forEach(r => configMap[r.key] = r.value);
 
-  const heroInfo = configMap.hero_info || {
-    initials: 'M & X',
-    subtitle: 'Nuestra Boda',
-    description: 'Nos casamos, y queremos que seas parte de nuestra historia.'
-  };
+  const heroInfo = configMap.hero_info;
 
   const weddingDate = configMap.wedding_date || '2026-12-31T20:00:00';
   const venueInfo = configMap.venue_info || { 

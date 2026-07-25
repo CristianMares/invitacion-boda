@@ -37,36 +37,43 @@ export default function VenueMap({ assignedTableIds, tables, decorations, member
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[99999] flex flex-col overflow-hidden animate-in fade-in duration-300">
+        <div className="fixed inset-0 h-[100dvh] w-screen bg-black/95 backdrop-blur-2xl z-[99999] flex flex-col overflow-hidden animate-in fade-in duration-300">
           
-          {/* HEADER FIJO GARANTIZADO */}
-          <header className="w-full bg-neutral-950 border-b border-white/10 p-4 md:px-8 z-[100000] flex justify-between items-center shadow-2xl shrink-0">
-            <div className="space-y-1 overflow-hidden pr-4">
-              <h3 className="text-amber-400 font-serif text-base md:text-lg font-bold">Croquis del Evento</h3>
+          {/* HEADER FIJO CON DETALLE DE INTEGRANTES */}
+          <header className="w-full bg-neutral-950 border-b border-white/10 p-3 md:p-4 z-[100000] flex justify-between items-center shadow-2xl shrink-0">
+            <div className="space-y-1 overflow-hidden pr-2">
+              <h3 className="text-amber-400 font-serif text-sm md:text-base font-bold">Croquis del Evento</h3>
               {memberAssignments && memberAssignments.length > 0 ? (
-                <div className="flex flex-wrap gap-2 max-h-16 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto pr-1">
                   {memberAssignments.map((m, i) => (
-                    <span key={i} className="text-[10px] md:text-xs font-mono bg-black px-2.5 py-1 rounded-lg border border-white/10 text-neutral-300">
+                    <span key={i} className="text-[10px] font-mono bg-black px-2 py-0.5 rounded border border-white/10 text-neutral-300">
                       {m.name}: <strong className="text-amber-400 font-bold">Mesa {m.tableName}</strong>
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-neutral-300 font-mono">Mesa(s) asignada(s): <span className="text-white font-bold">{assignedTableNumbers}</span></p>
+                <p className="text-[11px] text-neutral-300 font-mono">Mesa(s): <span className="text-white font-bold">{assignedTableNumbers}</span></p>
               )}
             </div>
 
             <button 
               onClick={() => setIsOpen(false)} 
-              className="p-3 bg-neutral-900 border border-white/10 rounded-full hover:bg-neutral-800 text-white shrink-0 shadow-lg transition-colors"
+              className="p-2.5 bg-neutral-900 border border-white/10 rounded-full hover:bg-neutral-800 text-white shrink-0 shadow-lg transition-colors"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </header>
 
-          {/* CONTENEDOR DEL MAPA */}
-          <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center">
-            <TransformWrapper ref={transformRef} initialScale={0.85} minScale={0.3} maxScale={4} centerOnInit>
+          {/* LIENZO AJUSTADO SIN SCROLL DE PÁGINA */}
+          <div className="flex-1 w-full h-full min-h-0 relative overflow-hidden flex items-center justify-center">
+            <TransformWrapper 
+              ref={transformRef} 
+              initialScale={0.5} 
+              minScale={0.2} 
+              maxScale={3.5} 
+              centerOnInit
+              wheel={{ step: 0.03, smoothStep: 0.005 }}
+            >
               {({ zoomIn, zoomOut, resetTransform }) => (
                 <>
                   <div className="absolute bottom-6 right-6 z-[100000] bg-neutral-900/90 border border-white/10 rounded-2xl flex flex-col p-1.5 shadow-2xl backdrop-blur-md">
@@ -75,7 +82,7 @@ export default function VenueMap({ assignedTableIds, tables, decorations, member
                     <button onClick={() => resetTransform()} className="p-3 text-white hover:text-amber-400"><RotateCcw size={18} /></button>
                   </div>
 
-                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+                  <TransformComponent wrapperStyle={{ width: '100%', height: '100%', maxHeight: '100%' }}>
                     <div className="w-[1000px] h-[650px] bg-[#0d0d0d] border border-white/10 rounded-2xl relative shadow-2xl flex-shrink-0">
                       
                       {decorations.map(d => (

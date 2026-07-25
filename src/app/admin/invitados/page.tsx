@@ -23,6 +23,15 @@ export default async function AdminInvitados({
   const { tab = 'pending' } = await searchParams;
   const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
   
+  // 1. Obtener datos de plantilla dinámicos desde event_config
+  const configRows = await sql`SELECT key, value FROM event_config WHERE key IN ('hero_info', 'whatsapp_info')`;
+  const configMap: Record<string, any> = {};
+  configRows.forEach(r => configMap[r.key] = r.value);
+
+  const heroInfo = configMap.hero_info || { initials: 'M & X' };
+  const waTemplate = configMap.whatsapp_info?.template || '¡Hola {nombre}! Tu pase para la boda de {iniciales} está listo. Consulta tu código QR y mesa asignada aquí: {link}';
+
+  // 2. Obtener lista de invitados
   const rows = await sql`
     SELECT 
       g.id, g.full_name, g.phone, g.tickets_requested, g.status, g.has_entered, g.created_at,
@@ -83,7 +92,6 @@ export default async function AdminInvitados({
     <div className="h-full bg-black text-white p-4 md:p-10 font-sans overflow-y-auto selection:bg-amber-500 selection:text-black">
       <div className="max-w-5xl mx-auto pb-24">
         
-        {/* HEADER */}
         <div className="flex items-center justify-between mb-10 border-b border-white/5 pb-6 pt-12 md:pt-0">
           <div>
             <h1 className="text-4xl font-serif text-white tracking-wide">Validación de Registros</h1>
@@ -95,7 +103,6 @@ export default async function AdminInvitados({
           </div>
         </div>
 
-        {/* NAVEGACIÓN POR PESTAÑAS */}
         <div className="flex border-b border-white/5 mb-8 gap-2 overflow-x-auto">
           <Link href="/admin/invitados?tab=pending" className={`px-6 py-3 text-xs font-mono font-bold uppercase tracking-wider rounded-t-xl transition-all border-t border-x ${tab === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-transparent text-neutral-500 border-transparent'}`}>
             Pendientes ({counts.pending})
@@ -111,7 +118,6 @@ export default async function AdminInvitados({
           </Link>
         </div>
 
-        {/* CONTENEDOR DE TARJETAS */}
         <div className="grid gap-4">
           {filteredGuests.length === 0 && (
             <div className="text-center py-20 bg-neutral-900/10 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center justify-center gap-3">
@@ -121,8 +127,13 @@ export default async function AdminInvitados({
           )}
 
           {filteredGuests.map((guest) => {
-            const waMessage = `¡Hola ${guest.full_name}! Tu pase para la boda de M & X está listo. Consulta tu código QR y mesa asignada aquí: https://invitacion-boda-bbmh.vercel.app/ticket/${guest.id}`;
-            const waUrl = `https://wa.me/521${guest.phone}?text=${encodeURIComponent(waMessage)}`;
+            const ticketUrl = `https://invitacion-boda-bbmh.vercel.app/ticket/${guest.id}`;
+            const message = waTemplate
+              .replace('{nombre}', guest.full_name)
+              .replace('{iniciales}', heroInfo.initials)
+              .replace('{link}', ticketUrl);
+
+            const waUrl = `https://wa.me/521${guest.phone}?text=${encodeURIComponent(message)}`;
 
             return (
               <div key={guest.id} className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-6 backdrop-blur-md hover:border-white/10 transition-colors">
@@ -146,7 +157,6 @@ export default async function AdminInvitados({
                   )}
                 </div>
 
-                {/* BOTONES DE ACCIÓN */}
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   {tab === 'pending' && (
                     <>

@@ -19,9 +19,9 @@ export default function CalendarButton({ weddingDate, title, location }: Calenda
     const minutes = dateObj.getMinutes();
 
     const event: ics.EventAttributes = {
-      title: title || 'Boda de M & X',
+      title: title,
       description: 'Celebra con nosotros este día tan especial. Recuerda llevar tu código QR para el acceso.',
-      location: location || 'Hacienda Las Rosas, León, Guanajuato, México',
+      location: location,
       start: [year, month, day, hours, minutes],
       duration: { hours: 8, minutes: 0 },
       status: 'CONFIRMED',
