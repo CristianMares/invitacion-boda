@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Plus, Trash2, BoxSelect, RotateCw } from 'lucide-react';
+import { Save, Plus, Trash2, BoxSelect } from 'lucide-react';
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -17,7 +17,9 @@ export default function LayoutBuilder() {
   const [saving, setSaving] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tables' | 'decor'>('tables');
+  
   const [dragging, setDragging] = useState<{ id: string, type: 'table' | 'decor' } | null>(null);
+  const [resizing, setDraggingResize] = useState<{ id: string, handle: string, startX: number, startY: number, startW: number, startH: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -28,37 +30,84 @@ export default function LayoutBuilder() {
     });
   }, []);
 
+  const handleSelectObject = (id: string, type: 'table' | 'decor') => {
+    setSelectedId(id);
+    // Cambia automáticamente de pestaña según el tipo seleccionado
+    setActiveTab(type === 'table' ? 'tables' : 'decor');
+  };
+
   const handlePointerDown = (id: string, type: 'table' | 'decor', e: React.PointerEvent) => {
     e.stopPropagation();
-    setSelectedId(id);
+    handleSelectObject(id, type);
     setDragging({ id, type });
   };
 
+  const handleResizeStart = (id: string, handle: string, e: React.PointerEvent) => {
+    e.stopPropagation();
+    const item = decorations.find(d => d.id === id);
+    if (!item) return;
+    setDraggingResize({
+      id,
+      handle,
+      startX: e.clientX,
+      startY: e.clientY,
+      startW: item.width,
+      startH: item.height
+    });
+  };
+
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging || !containerRef.current) return;
+    if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    let x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-    let y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
 
-    x = Math.max(0, Math.min(100, x));
-    y = Math.max(0, Math.min(100, y));
+    // 1. Arrastre de posición
+    if (dragging) {
+      let x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+      let y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+      x = Math.max(0, Math.min(100, x));
+      y = Math.max(0, Math.min(100, y));
 
-    if (dragging.type === 'table') {
-      setTables(prev => prev.map(t => t.id === dragging.id ? { ...t, pos_x: x, pos_y: y } : t));
-    } else {
-      setDecorations(prev => prev.map(d => d.id === dragging.id ? { ...d, pos_x: x, pos_y: y } : d));
+      if (dragging.type === 'table') {
+        setTables(prev => prev.map(t => t.id === dragging.id ? { ...t, pos_x: x, pos_y: y } : t));
+      } else {
+        setDecorations(prev => prev.map(d => d.id === dragging.id ? { ...d, pos_x: x, pos_y: y } : d));
+      }
+    }
+
+    // 2. Redimensión tirando de las esquinas
+    if (resizing) {
+      const deltaXPercent = ((e.clientX - resizing.startX) / rect.width) * 100;
+      const deltaYPercent = ((e.clientY - resizing.startY) / rect.height) * 100;
+
+      setDecorations(prev => prev.map(d => {
+        if (d.id !== resizing.id) return d;
+        let newW = resizing.startW;
+        let newH = resizing.startH;
+
+        if (resizing.handle.includes('r')) newW = Math.max(4, resizing.startW + deltaXPercent);
+        if (resizing.handle.includes('b')) newH = Math.max(4, resizing.startH + deltaYPercent);
+
+        return { ...d, width: Math.round(newW), height: Math.round(newH) };
+      }));
     }
   };
 
-  const handlePointerUp = () => setDragging(null);
+  const handlePointerUp = () => {
+    setDragging(null);
+    setDraggingResize(null);
+  };
 
   const addTable = () => {
     const nextNum = tables.length > 0 ? Math.max(...tables.map(t => t.table_number)) + 1 : 1;
-    setTables([...tables, { id: generateUUID(), table_number: nextNum, pos_x: 50, pos_y: 50, capacity: 10 }]);
+    const newId = generateUUID();
+    setTables([...tables, { id: newId, table_number: nextNum, pos_x: 50, pos_y: 50, capacity: 10 }]);
+    handleSelectObject(newId, 'table');
   };
 
   const addDecoration = () => {
-    setDecorations([...decorations, { id: generateUUID(), type: 'rect', label: 'ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#D4C4B7', rotation: 0 }]);
+    const newId = generateUUID();
+    setDecorations([...decorations, { id: newId, type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#D4C4B7', rotation: 0 }]);
+    handleSelectObject(newId, 'decor');
   };
 
   const saveLayout = async () => {
@@ -71,30 +120,33 @@ export default function LayoutBuilder() {
     alert('Diseño guardado exitosamente.');
   };
 
-  const selectedItem = decorations.find(d => d.id === selectedId) || tables.find(t => t.id === selectedId);
-
   if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando croquis...</div>;
 
   return (
-    <div className="h-full flex flex-col md:flex-row bg-black text-white">
-      {/* CONTROLES IZQUIERDA */}
-      <div className="w-full md:w-80 bg-neutral-950 border-r border-white/5 flex flex-col h-[40vh] md:h-full z-20 shadow-2xl flex-shrink-0">
+    <div className="h-full flex flex-col md:flex-row bg-black text-white selection:bg-amber-500">
+      {/* PANEL LATERAL */}
+      <div className="w-full md:w-80 bg-neutral-950 border-r border-white/5 flex flex-col h-[45vh] md:h-full z-20 shadow-2xl flex-shrink-0">
         <div className="flex border-b border-white/5">
-          <button onClick={() => setActiveTab('tables')} className={`flex-1 py-4 text-xs font-bold uppercase ${activeTab === 'tables' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Mesas</button>
-          <button onClick={() => setActiveTab('decor')} className={`flex-1 py-4 text-xs font-bold uppercase ${activeTab === 'decor' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Áreas</button>
+          <button onClick={() => setActiveTab('tables')} className={`flex-1 py-4 text-xs font-bold uppercase transition-all ${activeTab === 'tables' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Mesas</button>
+          <button onClick={() => setActiveTab('decor')} className={`flex-1 py-4 text-xs font-bold uppercase transition-all ${activeTab === 'decor' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Áreas</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {activeTab === 'tables' ? (
             <>
               <button onClick={addTable} className="w-full bg-neutral-900 border border-white/10 py-3 rounded-xl flex justify-center gap-2 hover:bg-white hover:text-black font-bold mb-2 transition-all"><Plus size={16} /> Crear Mesa</button>
               {tables.map(t => (
-                <div key={t.id} onClick={() => setSelectedId(t.id)} className={`p-3 rounded-xl border transition-all cursor-pointer flex justify-between items-center ${selectedId === t.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
-                  <div>
+                <div key={t.id} onClick={() => handleSelectObject(t.id, 'table')} className={`p-3 rounded-xl border transition-all cursor-pointer space-y-2 ${selectedId === t.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
+                  <div className="flex justify-between items-center">
                     <p className="text-xs font-bold">Mesa {t.table_number}</p>
-                    <p className="text-[10px] text-neutral-500 font-mono">Capacidad: {t.capacity} pers.</p>
+                    <button onClick={(e) => { e.stopPropagation(); setTables(tables.filter(x => x.id !== t.id)); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); setTables(tables.filter(x => x.id !== t.id)); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
+                  {selectedId === t.id && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-neutral-500">Capacidad personas:</span>
+                      <input type="number" value={t.capacity} onChange={(e) => setTables(tables.map(tbl => tbl.id === t.id ? { ...tbl, capacity: Number(e.target.value) } : tbl))} className="w-16 bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white outline-none" />
+                    </div>
+                  )}
                 </div>
               ))}
             </>
@@ -102,16 +154,16 @@ export default function LayoutBuilder() {
             <>
               <button onClick={addDecoration} className="w-full bg-neutral-900 border border-white/10 py-3 rounded-xl flex justify-center gap-2 hover:bg-white hover:text-black font-bold mb-2 transition-all"><BoxSelect size={16} /> Crear Área</button>
               {decorations.map(d => (
-                <div key={d.id} onClick={() => setSelectedId(d.id)} className={`p-3 rounded-xl border space-y-2 transition-all cursor-pointer ${selectedId === d.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
+                <div key={d.id} onClick={() => handleSelectObject(d.id, 'decor')} className={`p-3 rounded-xl border space-y-2 transition-all cursor-pointer ${selectedId === d.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
                   <div className="flex justify-between items-center">
                     <input type="text" value={d.label} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, label: e.target.value } : dec))} className="bg-transparent text-xs font-bold w-3/4 outline-none border-b border-neutral-800 focus:border-amber-500" />
                     <button onClick={(e) => { e.stopPropagation(); setDecorations(decorations.filter(x => x.id !== d.id)); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
                   </div>
                   {selectedId === d.id && (
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-                      <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded" /></div>
-                      <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded" /></div>
-                      <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded" /></div>
+                      <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                      <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                      <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
                       <div><span className="text-[9px] text-neutral-500">COLOR</span><input type="color" value={d.bg_color || '#D4C4B7'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full h-6 bg-transparent cursor-pointer rounded" /></div>
                     </div>
                   )}
@@ -126,7 +178,7 @@ export default function LayoutBuilder() {
         </div>
       </div>
 
-      {/* LIENZO SVG (ULTRA RÁPIDO Y FLUIDO) */}
+      {/* LIENZO SVG */}
       <div 
         className="flex-1 bg-[#0a0a0a] overflow-auto p-4 md:p-8 flex items-center justify-center select-none"
         onPointerMove={handlePointerMove}
@@ -135,17 +187,16 @@ export default function LayoutBuilder() {
         <div 
           ref={containerRef}
           onClick={() => setSelectedId(null)}
-          className="w-[1000px] h-[650px] bg-[#FAF7F2] border-2 border-neutral-800 rounded-2xl relative shadow-2xl flex-shrink-0"
+          className="w-[1000px] h-[650px] bg-[#FAF7F2] border-2 border-neutral-800 rounded-2xl relative shadow-2xl flex-shrink-0 overflow-hidden"
         >
-          {/* Estructuras y Decoraciones */}
           {decorations.map(d => {
             const isSelected = selectedId === d.id;
             return (
               <div
                 key={d.id}
                 onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)}
-                className={`absolute rounded flex items-center justify-center cursor-grab active:cursor-grabbing transition-shadow ${
-                  isSelected ? 'ring-2 ring-amber-500 shadow-xl z-30' : 'z-10'
+                className={`absolute rounded flex items-center justify-center cursor-grab active:cursor-grabbing ${
+                  isSelected ? 'ring-2 ring-amber-500 z-30' : 'z-10'
                 }`}
                 style={{
                   left: `${d.pos_x}%`,
@@ -159,11 +210,18 @@ export default function LayoutBuilder() {
                 <span className="text-[10px] font-mono font-bold text-neutral-800 uppercase tracking-widest text-center pointer-events-none px-1">
                   {d.label}
                 </span>
+
+                {/* TIRADORES DE REDIMENSIÓN (PUNTOS EN LAS ESQUINAS AL SELECCIONAR) */}
+                {isSelected && (
+                  <div 
+                    onPointerDown={(e) => handleResizeStart(d.id, 'rb', e)}
+                    className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 border border-black rounded-full cursor-se-resize translate-x-1/2 translate-y-1/2 z-50 shadow-md"
+                  />
+                )}
               </div>
             );
           })}
 
-          {/* Mesas */}
           {tables.map(t => {
             const isSelected = selectedId === t.id;
             return (

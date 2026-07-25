@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminMesas() {
   const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
   
-  const tables = await sql`SELECT * FROM tables`;
+  const tables = await sql`SELECT * FROM tables ORDER BY table_number ASC`;
   const decorations = await sql`SELECT * FROM decorations`;
 
   const guests = await sql`
@@ -26,11 +26,11 @@ export default async function AdminMesas() {
   const allPeople = [...guests, ...companions];
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans">
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full bg-black text-white p-4 md:p-8 font-sans flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-3xl font-serif tracking-wide text-white">Asignación de Asientos</h1>
-          <p className="text-neutral-500 text-sm mt-1">Arrastra individuos desde sus grupos hacia las mesas correspondientes.</p>
+          <p className="text-neutral-500 text-xs mt-1">Arrastra grupos o personas hacia las mesas del croquis.</p>
         </div>
         <div className="bg-neutral-900 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
           <LayoutDashboard className="text-amber-500" size={16} />
@@ -38,7 +38,9 @@ export default async function AdminMesas() {
         </div>
       </div>
 
-      <SeatingPlanUI initialPeople={allPeople as any} tables={tables as any} decorations={decorations as any} />
+      <div className="flex-1 min-h-0 overflow-hidden relative">
+        <SeatingPlanUI initialPeople={allPeople as any} tables={tables as any} decorations={decorations as any} />
+      </div>
     </div>
   );
 }
