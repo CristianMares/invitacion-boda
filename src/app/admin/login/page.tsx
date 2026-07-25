@@ -11,17 +11,23 @@ export default async function AdminLogin({
 
   async function handleLogin(formData: FormData) {
     'use server';
-    const pin = formData.get('pin') as string;
-    const correctPin = process.env.ADMIN_PIN || '2026';
+    const pin = (formData.get('pin') as string) || '';
+    const correctPin = process.env.ADMIN_PIN;
 
     if (pin === correctPin) {
       const cookieStore = await cookies();
+      
+      // Expira en 8 horas (8 horas * 60 min * 60 seg)
+      const HOURS_EXPIRATION = 8;
+      const maxAge = 60 * 60 * HOURS_EXPIRATION;
+
       cookieStore.set('admin_auth', pin, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 60 * 60 * 24, // 1 día
+        maxAge: maxAge,
       });
+
       redirect('/admin/invitados');
     } else {
       redirect('/admin/login?error=1');
@@ -32,32 +38,32 @@ export default async function AdminLogin({
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
       <form action={handleLogin} className="w-full max-w-sm bg-neutral-900 border border-white/5 p-8 rounded-2xl shadow-2xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto border border-amber-500/20">
             <Lock size={24} />
           </div>
           <h1 className="text-2xl font-serif text-white">Acceso Restringido</h1>
-          <p className="text-neutral-500 text-xs uppercase tracking-widest">Código PIN Requerido</p>
+          <p className="text-neutral-500 text-xs uppercase tracking-widest font-mono">Contraseña Requerida</p>
         </div>
 
         <div className="space-y-2">
           <input 
             type="password" 
             name="pin"
-            placeholder="••••"
-            maxLength={6}
-            className="w-full text-center py-4 bg-black border border-neutral-800 rounded-xl text-xl text-white tracking-widest font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+            placeholder="Ingresa tu contraseña"
+            className="w-full text-center py-3.5 px-4 bg-black border border-neutral-800 rounded-xl text-sm text-white font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:text-neutral-600"
             required
+            autoFocus
           />
         </div>
 
-        <button type="submit" className="w-full bg-white text-black font-bold py-4 rounded-xl transition-all hover:bg-neutral-200 active:scale-95">
+        <button type="submit" className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-3.5 rounded-xl transition-all text-xs uppercase tracking-wider shadow-lg active:scale-95">
           Verificar Identidad
         </button>
 
         {error && (
-          <div className="flex items-center gap-2 justify-center text-red-400 text-xs bg-red-950/30 border border-red-500/20 p-3 rounded-xl">
+          <div className="flex items-center gap-2 justify-center text-red-400 text-xs bg-red-950/30 border border-red-500/20 p-3 rounded-xl font-mono">
             <ShieldAlert size={14} />
-            <span>Código PIN incorrecto.</span>
+            <span>Contraseña incorrecta.</span>
           </div>
         )}
       </form>
