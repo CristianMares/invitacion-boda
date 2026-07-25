@@ -2,15 +2,13 @@ import { neon } from '@neondatabase/serverless';
 import { ImageIcon } from 'lucide-react';
 import GalleryGrid from '@/components/GalleryGrid';
 
-// Evita caché estático, asegura fotos en tiempo real
 export const dynamic = 'force-dynamic';
 
 export default async function GaleriaPublica() {
   const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
   
-  // Límite inicial preventivo de 100 fotos recientes
   const fotos = await sql`
-    SELECT id, cloudinary_url, created_at, likes 
+    SELECT id, cloudinary_url, created_at, likes, guest_message 
     FROM event_media 
     ORDER BY created_at DESC 
     LIMIT 100
@@ -24,9 +22,9 @@ export default async function GaleriaPublica() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none"></div>
         
         <div className="relative z-10 max-w-2xl mx-auto">
-          <h3 className="text-amber-500 tracking-[0.4em] uppercase text-xs font-bold mb-4">Live Feed</h3>
-          <h1 className="text-5xl md:text-6xl font-serif mb-6 text-white drop-shadow-lg">Muro de Recuerdos</h1>
-          <p className="text-neutral-400 font-light text-lg">Las memorias capturadas por nuestros invitados durante la celebración, reveladas en tiempo real.</p>
+          <h3 className="text-amber-500 tracking-[0.4em] uppercase text-xs font-bold mb-4 font-mono">Live Feed</h3>
+          <h1 className="text-5xl md:text-6xl font-serif mb-6 text-white drop-shadow-lg">Libro de Firmas y Galería</h1>
+          <p className="text-neutral-400 font-light text-lg">Las memorias y buenos deseos compartidos por nuestros invitados durante la celebración.</p>
         </div>
       </section>
 
@@ -38,8 +36,8 @@ export default async function GaleriaPublica() {
               <ImageIcon size={40} className="text-neutral-600" />
             </div>
             <div>
-              <p className="text-white font-serif text-2xl mb-2">Aún no hay fotos</p>
-              <p className="text-neutral-500">Sé el primero en usar la cámara analógica.</p>
+              <p className="text-white font-serif text-2xl mb-2">Aún no hay recuerdos</p>
+              <p className="text-neutral-500">Sé el primero en tomar una foto y dejar una dedicatoria.</p>
             </div>
           </div>
         ) : (

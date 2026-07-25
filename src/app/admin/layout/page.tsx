@@ -1,6 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Plus, Trash2, LayoutTemplate, BoxSelect } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Importación dinámica obligatoria para evitar errores de renderizado en el servidor
+const CanvasEditor = dynamic(() => import('@/components/CanvasEditor'), { ssr: false });
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -16,8 +20,6 @@ export default function LayoutBuilder() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'tables' | 'decor'>('tables');
-  const [draggingItem, setDraggingItem] = useState<{id: string, type: 'table'|'decor'} | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/admin/tables').then(res => res.json()).then(data => {
@@ -26,35 +28,13 @@ export default function LayoutBuilder() {
     });
   }, []);
 
-  const handlePointerDown = (id: string, type: 'table'|'decor', e: React.PointerEvent) => {
-    e.preventDefault();
-    setDraggingItem({id, type});
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingItem || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    let x = ((e.clientX - rect.left) / rect.width) * 100;
-    let y = ((e.clientY - rect.top) / rect.height) * 100;
-    x = Math.max(0, Math.min(100, x));
-    y = Math.max(0, Math.min(100, y));
-
-    if (draggingItem.type === 'table') {
-      setTables(prev => prev.map(t => t.id === draggingItem.id ? { ...t, pos_x: x, pos_y: y } : t));
-    } else {
-      setDecorations(prev => prev.map(d => d.id === draggingItem.id ? { ...d, pos_x: x, pos_y: y } : d));
-    }
-  };
-
-  const handlePointerUp = () => setDraggingItem(null);
-
   const addTable = () => {
     const nextNum = tables.length > 0 ? Math.max(...tables.map(t => t.table_number)) + 1 : 1;
     setTables([...tables, { id: generateUUID(), table_number: nextNum, pos_x: 50, pos_y: 50, capacity: 10 }]);
   };
 
   const addDecoration = () => {
-    setDecorations([...decorations, { id: generateUUID(), type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#111111', rotation: 0 }]);
+    setDecorations([...decorations, { id: generateUUID(), type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#E8A881', rotation: 0 }]);
   };
 
   const saveLayout = async () => {
@@ -64,15 +44,13 @@ export default function LayoutBuilder() {
       body: JSON.stringify({ tables, decorations })
     });
     setSaving(false);
-    alert('Plano actualizado.');
+    alert('Motor gráfico sincronizado con la base de datos.');
   };
 
-  if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando motor gráfico...</div>;
+  if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando Konva API...</div>;
 
   return (
     <div className="h-full flex flex-col md:flex-row bg-black">
-      
-      {/* PANEL LATERAL */}
       <div className="w-full md:w-96 bg-neutral-950 border-r border-white/5 flex flex-col h-[45vh] md:h-full z-20 shadow-2xl flex-shrink-0">
         <div className="flex border-b border-white/5">
           <button onClick={() => setActiveTab('tables')} className={`flex-1 py-4 text-xs font-bold uppercase ${activeTab === 'tables' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Mesas</button>
@@ -106,48 +84,24 @@ export default function LayoutBuilder() {
                     <button onClick={() => setDecorations(decorations.filter(x => x.id !== d.id))} className="text-neutral-600 hover:text-red-500 ml-2"><Trash2 size={16} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
-                    <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
-                    <div><span className="text-[9px] text-neutral-500">COLOR HEX</span><input type="text" value={d.bg_color || '#111111'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
-                    <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
+                    <div><span className="text-[9px] text-neutral-500">COLOR HEX</span><input type="text" value={d.bg_color || '#E8A881'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white" /></div>
                   </div>
+                  <p className="text-[9px] text-neutral-500 mt-2 text-center">Selecciona el objeto en el lienzo para escalar o rotar.</p>
                 </div>
               ))}
             </>
           )}
         </div>
         <div className="p-4 border-t border-white/5">
-          <button onClick={saveLayout} disabled={saving} className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-4 rounded-xl">{saving ? 'Guardando...' : 'Guardar Plano'}</button>
+          <button onClick={saveLayout} disabled={saving} className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">{saving ? 'Guardando...' : 'Guardar Diseño Base'}</button>
         </div>
       </div>
 
-      {/* LIENZO SCROLLABLE (Solución a recortes en móvil) */}
-      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
-        <div ref={containerRef} className="w-[1200px] h-[800px] bg-[#F3CBAF] border-2 border-dashed border-neutral-800 rounded-lg relative shadow-2xl touch-none mx-auto origin-top-left">
-          <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
-
-          {decorations.map(d => (
-            <div key={d.id} onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)} className="absolute border border-black/20 flex items-center justify-center cursor-grab active:cursor-grabbing hover:ring-2 ring-white transition-shadow"
-                 style={{ 
-                   left: `${d.pos_x}%`, top: `${d.pos_y}%`, 
-                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, 
-                   width: `${d.width}%`, height: `${d.height}%`, 
-                   backgroundColor: d.bg_color || '#111111',
-                   zIndex: draggingItem?.id === d.id ? 40 : 5 
-                 }}>
-              <span className="text-xs font-mono font-bold text-black/60 uppercase pointer-events-none text-center drop-shadow-md">{d.label}</span>
-            </div>
-          ))}
-
-          {tables.map(t => (
-            <div key={t.id} onPointerDown={(e) => handlePointerDown(t.id, 'table', e)} className="absolute w-16 h-16 bg-[#165A72] border-[3px] border-[#0E3D4D] rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:ring-4 ring-amber-500 shadow-xl"
-                 style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', zIndex: draggingItem?.id === t.id ? 50 : 10 }}>
-              <span className="text-white font-serif font-bold text-lg pointer-events-none">{t.table_number}</span>
-            </div>
-          ))}
+      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10 flex">
+        <div className="m-auto border-[4px] border-neutral-800 rounded-lg shadow-2xl overflow-hidden">
+          <CanvasEditor tables={tables} decorations={decorations} setTables={setTables} setDecorations={setDecorations} />
         </div>
       </div>
-
     </div>
   );
 }

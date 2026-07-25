@@ -1,7 +1,7 @@
 ﻿'use client';
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, SwitchCamera, Zap, ImagePlus, Paintbrush } from 'lucide-react';
+import { Camera, ImagePlus, Paintbrush, Send, MessageSquareText } from 'lucide-react';
 
 const FILTERS = [
   { id: 'normal', name: 'Original', css: '' },
@@ -11,21 +11,26 @@ const FILTERS = [
 ];
 
 export default function HybridCameraFlow() {
-  const [view, setView] = useState<'menu' | 'retro_cam'>('menu');
+  const [view, setView] = useState<'menu' | 'retro_cam' | 'preview'>('menu');
   const [shotsLeft, setShotsLeft] = useState(24);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [guestMessage, setGuestMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadToBackend = async (dataUri: string, source: string) => {
+  const uploadToBackend = async (dataUri: string, source: string, msg: string) => {
     setIsUploading(true);
     try {
       const res = await fetch('/api/upload', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUri, source, filter: 'normal' }),
+        body: JSON.stringify({ image: dataUri, source, filter: 'normal', guestMessage: msg }),
       });
       const data = await res.json();
       if (!data.success) throw new Error('Error de servidor');
       setShotsLeft(prev => prev - 1);
+      setView('menu');
+      setCapturedImage(null);
+      setGuestMessage('');
     } catch (error) {
       alert("Error en la transmisión de datos.");
     } finally {
@@ -38,8 +43,11 @@ export default function HybridCameraFlow() {
     if (!file || shotsLeft <= 0) return;
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = async () => {
-      if (typeof reader.result === 'string') await uploadToBackend(reader.result, source);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setCapturedImage(reader.result);
+        setView('preview');
+      }
     };
   };
 
@@ -52,13 +60,46 @@ export default function HybridCameraFlow() {
     );
   }
 
+  if (view === 'preview') {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
+        <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-3xl p-6 space-y-6 shadow-2xl">
+          <h2 className="text-xl font-serif text-center">Firma tu Recuerdo</h2>
+          <div className="w-full aspect-square rounded-2xl overflow-hidden border border-white/10 relative">
+            <img src={capturedImage || ''} alt="Preview" className="w-full h-full object-cover" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-neutral-400 text-xs font-mono">
+              <MessageSquareText size={14} className="text-amber-500" />
+              <span>Dedicatoria para los novios:</span>
+            </div>
+            <input 
+              type="text" 
+              maxLength={80}
+              placeholder="Ej. ¡Muchas felicidades! - Familia Pérez" 
+              value={guestMessage}
+              onChange={(e) => setGuestMessage(e.target.value)}
+              className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white outline-none focus:border-amber-500"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setView('menu')} className="flex-1 bg-neutral-800 hover:bg-neutral-700 py-3 rounded-xl font-bold text-xs uppercase tracking-wider">Cancelar</button>
+            <button onClick={() => capturedImage && uploadToBackend(capturedImage, 'upload', guestMessage)} disabled={isUploading} className="flex-1 bg-amber-600 hover:bg-amber-500 text-black py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+              {isUploading ? 'Enviando...' : <><Send size={14} /> Publicar</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (view === 'menu') {
     return (
       <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-serif text-neutral-200 italic mb-2">Kodak Moment</h1>
-            <p className="text-neutral-500 text-sm">Selecciona el método de captura</p>
+            <h1 className="text-4xl font-serif text-neutral-200 italic mb-2">Libro de Firmas</h1>
+            <p className="text-neutral-500 text-sm">Captura un momento y déjanos un mensaje</p>
             <div className="mt-4 inline-block bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-full">
               <span className="text-red-500 font-mono">{shotsLeft}</span>
               <span className="text-neutral-500 text-xs ml-2 uppercase">Fotos restantes</span>
@@ -76,37 +117,37 @@ export default function HybridCameraFlow() {
           <button onClick={() => fileInputRef.current?.click()} className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-neutral-800 p-6 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
             <div className="bg-blue-500/10 p-4 rounded-full text-blue-500"><ImagePlus size={32} /></div>
             <div className="text-left">
-              <h3 className="text-white font-bold">Subir de Galería / Tomar Foto</h3>
-              <p className="text-neutral-500 text-sm">Abre tu cámara nativa o carrete.</p>
+              <h3 className="text-white font-bold">Subir de Galería</h3>
+              <p className="text-neutral-500 text-sm">Sube fotos o videos guardados.</p>
             </div>
           </button>
 
           <input type="file" accept="image/*,video/*" ref={fileInputRef} className="hidden" onChange={(e) => processFile(e, 'upload')} />
-          {isUploading && <p className="text-center text-amber-500 animate-pulse mt-4">Procesando archivo...</p>}
         </div>
       </div>
     );
   }
 
-  return <RetroCamUI shotsLeft={shotsLeft} setShotsLeft={setShotsLeft} goBack={() => setView('menu')} />;
+  return <RetroCamUI shotsLeft={shotsLeft} setShotsLeft={setShotsLeft} goBack={() => setView('menu')} uploadToBackend={uploadToBackend} />;
 }
 
-// ... (El componente RetroCamUI sigue igual que lo tenías abajo de este archivo)
-function RetroCamUI({ shotsLeft, setShotsLeft, goBack }: { shotsLeft: number, setShotsLeft: any, goBack: () => void }) {
+function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend }: any) {
   const webcamRef = useRef<Webcam>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [filterIdx, setFilterIdx] = useState(0);
   const [flashOn, setFlashOn] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [msgModal, setMsgModal] = useState(false);
+  const [tempImage, setTempImage] = useState<string | null>(null);
+  const [guestMessage, setGuestMessage] = useState('');
 
   const toggleCamera = () => setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   const toggleFilter = () => setFilterIdx(prev => (prev + 1) % FILTERS.length);
   const toggleFlash = () => setFlashOn(prev => !prev);
 
   const capturePhoto = useCallback(async () => {
-    if (shotsLeft <= 0 || isUploading || !cameraReady) return;
+    if (shotsLeft <= 0 || !cameraReady) return;
     if (flashOn) {
       setScreenFlash(true);
       await new Promise(res => setTimeout(res, 150));
@@ -115,22 +156,43 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack }: { shotsLeft: number, se
     if (flashOn) setTimeout(() => setScreenFlash(false), 200);
     
     if (imageSrc) {
-      setIsUploading(true);
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imageSrc, source: 'webcam', filter: FILTERS[filterIdx].id }),
-        });
-        const data = await res.json();
-        if (data.success) setShotsLeft((prev: number) => prev - 1);
-      } catch (error) {
-        alert("Error de subida");
-      } finally {
-        setIsUploading(false);
-      }
+      setTempImage(imageSrc);
+      setMsgModal(true);
     }
-  }, [webcamRef, flashOn, shotsLeft, isUploading, cameraReady, filterIdx]);
+  }, [webcamRef, flashOn, shotsLeft, cameraReady]);
+
+  if (msgModal) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-6 text-white z-50">
+        <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-3xl p-6 space-y-6 shadow-2xl">
+          <h2 className="text-xl font-serif text-center">Firma tu Recuerdo</h2>
+          <div className="w-full aspect-square rounded-2xl overflow-hidden border border-white/10 relative">
+            <img src={tempImage || ''} alt="Captured" className="w-full h-full object-cover" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-neutral-400 text-xs font-mono">
+              <MessageSquareText size={14} className="text-amber-500" />
+              <span>Dedicatoria para los novios:</span>
+            </div>
+            <input 
+              type="text" 
+              maxLength={80}
+              placeholder="Ej. ¡Los queremos mucho! - Los Gómez" 
+              value={guestMessage}
+              onChange={(e) => setGuestMessage(e.target.value)}
+              className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white outline-none focus:border-amber-500"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setMsgModal(false)} className="flex-1 bg-neutral-800 hover:bg-neutral-700 py-3 rounded-xl font-bold text-xs uppercase tracking-wider">Repetir Foto</button>
+            <button onClick={() => tempImage && uploadToBackend(tempImage, 'webcam', guestMessage)} className="flex-1 bg-amber-600 hover:bg-amber-500 text-black py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+              <Send size={14} /> Publicar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
@@ -146,8 +208,8 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack }: { shotsLeft: number, se
         <button onClick={toggleFilter} className="w-14 h-14 bg-gradient-to-br from-[#2a2a2a] to-[#111] rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-[#333] text-neutral-400 hover:text-white transition-all active:scale-95 z-10"><Paintbrush size={20} /></button>
         <div className="relative z-10">
           <div className="absolute inset-[-6px] bg-gradient-to-b from-neutral-800 to-black rounded-full blur-[2px]"></div>
-          <button onClick={capturePhoto} disabled={isUploading || !cameraReady} className="relative w-20 h-20 bg-gradient-to-b from-[#e5e5e5] to-[#a3a3a3] rounded-full flex items-center justify-center shadow-[0_8px_15px_rgba(0,0,0,0.8),inset_0_4px_4px_rgba(255,255,255,0.8)] active:translate-y-[2px] transition-all disabled:opacity-50">
-            {isUploading ? <div className="w-8 h-8 border-4 border-neutral-800 border-t-transparent rounded-full animate-spin"></div> : <div className="w-16 h-16 bg-gradient-to-b from-[#f5f5f5] to-[#d4d4d4] rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,0.1)]"></div>}
+          <button onClick={capturePhoto} disabled={!cameraReady} className="relative w-20 h-20 bg-gradient-to-b from-[#e5e5e5] to-[#a3a3a3] rounded-full flex items-center justify-center shadow-[0_8px_15px_rgba(0,0,0,0.8),inset_0_4px_4px_rgba(255,255,255,0.8)] active:translate-y-[2px] transition-all disabled:opacity-50">
+            <div className="w-16 h-16 bg-gradient-to-b from-[#f5f5f5] to-[#d4d4d4] rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,0.1)]"></div>
           </button>
         </div>
         <button onClick={toggleCamera} className="w-14 h-14 bg-gradient-to-br from-[#2a2a2a] to-[#111] rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-[#333] text-neutral-400 hover:text-white transition-all active:scale-95 z-10"><SwitchCamera size={20} /></button>

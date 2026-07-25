@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import { Heart, Camera } from 'lucide-react';
+import { Heart, Camera, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface MediaData {
@@ -9,6 +9,7 @@ interface MediaData {
   cloudinary_url: string;
   created_at: string;
   likes: number;
+  guest_message?: string | null;
 }
 
 export default function GalleryGrid({ initialMedia }: { initialMedia: MediaData[] }) {
@@ -18,7 +19,7 @@ export default function GalleryGrid({ initialMedia }: { initialMedia: MediaData[
   const handleLike = async (id: string) => {
     if (loadingLikes[id]) return;
     
-    // Optimistic UI Update (Respuesta inmediata al usuario)
+    // Optimistic UI Update
     setMedia(current => 
       current.map(item => item.id === id ? { ...item, likes: item.likes + 1 } : item)
     );
@@ -31,7 +32,7 @@ export default function GalleryGrid({ initialMedia }: { initialMedia: MediaData[
         body: JSON.stringify({ id })
       });
     } catch (error) {
-      // Revertir en caso de fallo
+      // Revertir en caso de error
       setMedia(current => 
         current.map(item => item.id === id ? { ...item, likes: item.likes - 1 } : item)
       );
@@ -40,7 +41,6 @@ export default function GalleryGrid({ initialMedia }: { initialMedia: MediaData[
     }
   };
 
-  // Forzar compresión en Cloudinary (Calidad auto, Formato auto, Ancho max 800px)
   const optimizeUrl = (url: string) => {
     return url.replace('/upload/', '/upload/c_scale,w_800/q_auto/f_auto/');
   };
@@ -64,6 +64,14 @@ export default function GalleryGrid({ initialMedia }: { initialMedia: MediaData[
             loading="lazy"
             className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
           />
+
+          {/* DEDICATORIA / LIBRO DE FIRMAS */}
+          {foto.guest_message && (
+            <div className="absolute top-4 inset-x-4 bg-black/70 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 text-xs font-serif italic text-amber-200 shadow-xl flex items-start gap-2 z-10">
+              <MessageSquare size={14} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="line-clamp-3">"{foto.guest_message}"</p>
+            </div>
+          )}
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-5">
             <div className="flex items-center gap-2 text-neutral-300 text-xs font-mono">

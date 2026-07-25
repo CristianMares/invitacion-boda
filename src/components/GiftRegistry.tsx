@@ -1,38 +1,63 @@
 ﻿'use client';
-import { Gift, Lock } from 'lucide-react';
+import { Gift, CreditCard, ShoppingBag, ExternalLink, Copy, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 
 export default function GiftRegistry() {
-  const [showDevMsg, setShowDevMsg] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText('012180012345678901');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="bg-neutral-900/50 backdrop-blur-sm p-10 rounded-3xl border border-white/10 text-center space-y-6 h-full flex flex-col items-center justify-center relative overflow-hidden group hover:border-amber-500/30 transition-colors">
-      <div className="w-20 h-20 bg-neutral-950 border border-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(245,158,11,0.1)]">
-        <Gift size={32} />
-      </div>
-      <h3 className="text-3xl font-serif text-white">Mesa de Regalos</h3>
-      <p className="text-neutral-400">Tu presencia es nuestro mejor regalo, pero si deseas tener un detalle con nosotros:</p>
-      
-      <button 
-        onClick={() => setShowDevMsg(true)}
-        className="mt-4 px-8 py-4 bg-amber-600 text-white font-bold rounded-full hover:bg-amber-500 transition-colors inline-flex items-center gap-2 w-full justify-center"
-      >
-        <Lock size={18} /> Ver Opciones de Regalo
-      </button>
-
-      {showDevMsg && (
-        <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-md flex flex-col items-center justify-center p-8 text-white animate-in fade-in duration-300 z-20">
-          <Lock size={48} className="text-amber-500 mb-4" />
-          <p className="font-serif text-2xl mb-2 text-white">Módulo Protegido</p>
-          <p className="text-sm text-neutral-400 mb-6 text-center">La pasarela de aportaciones seguras se activará tras la confirmación de tus pases.</p>
-          <button 
-            onClick={() => setShowDevMsg(false)}
-            className="text-xs uppercase font-bold tracking-widest border border-white/20 px-6 py-3 rounded-full hover:bg-white hover:text-black transition-colors"
-          >
-            Entendido
-          </button>
+    <div className="bg-neutral-900/50 backdrop-blur-sm p-8 rounded-3xl border border-white/10 h-full flex flex-col relative overflow-hidden group hover:border-amber-500/30 transition-colors">
+      <div className="flex items-center gap-4 mb-6 border-b border-white/5 pb-4">
+        <div className="w-12 h-12 bg-neutral-950 border border-amber-500/20 text-amber-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.1)] shrink-0">
+          <Gift size={20} />
         </div>
-      )}
+        <div className="text-left">
+          <h3 className="text-2xl font-serif text-white">Mesa de Regalos</h3>
+          <p className="text-neutral-400 text-xs font-mono">El mejor regalo es tu presencia.</p>
+        </div>
+      </div>
+
+      <div className="space-y-6 flex-1">
+        {/* Módulo Transaccional Directo */}
+        <div className="bg-black/50 p-4 rounded-2xl border border-white/5">
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard size={14} className="text-amber-500" />
+            <span className="text-xs font-bold uppercase tracking-widest text-white">Transferencia</span>
+          </div>
+          <div className="space-y-1 text-sm font-mono text-neutral-400">
+            <p>Banco: <span className="text-white">BBVA</span></p>
+            <p>Titular: <span className="text-white">Cristian Mares</span></p>
+            <div className="flex items-center justify-between mt-2 bg-neutral-950 p-2 rounded-lg border border-neutral-800">
+              <span className="text-amber-500 tracking-wider">012180012345678901</span>
+              <button onClick={handleCopy} className="text-neutral-500 hover:text-white transition-colors">
+                {copied ? <CheckCircle size={16} className="text-emerald-500" /> : <Copy size={16} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Módulo Agregador Externo */}
+        <div className="bg-black/50 p-4 rounded-2xl border border-white/5">
+          <div className="flex items-center gap-2 mb-3">
+            <ShoppingBag size={14} className="text-amber-500" />
+            <span className="text-xs font-bold uppercase tracking-widest text-white">Mesa en Tiendas</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <a href="#" target="_blank" className="flex items-center justify-center gap-2 bg-white text-black py-2 rounded-xl text-xs font-bold hover:bg-neutral-200 transition-colors">
+              Liverpool <ExternalLink size={12} />
+            </a>
+            <a href="#" target="_blank" className="flex items-center justify-center gap-2 bg-neutral-800 text-white py-2 rounded-xl text-xs font-bold hover:bg-neutral-700 transition-colors">
+              Amazon <ExternalLink size={12} />
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

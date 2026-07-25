@@ -6,7 +6,7 @@ cloudinary.config({ secure: true });
 
 export async function POST(request: Request) {
   try {
-    const { image, source, filter } = await request.json();
+    const { image, source, filter, guestMessage } = await request.json();
     
     if (!image) return NextResponse.json({ error: 'Payload vacío' }, { status: 400 });
 
@@ -18,12 +18,15 @@ export async function POST(request: Request) {
     const uploadResponse = await cloudinary.uploader.upload(image, {
       folder: 'boda_mc',
       upload_preset: 'ml_default',
-      resource_type: 'auto', // Habilita subida de .mp4 o .webm
+      resource_type: 'auto',
       transformation: transformations.length > 0 ? transformations : undefined,
     });
 
     const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
-    await sql`INSERT INTO event_media (cloudinary_url, source) VALUES (${uploadResponse.secure_url}, ${source || 'camera'})`;
+    await sql`
+      INSERT INTO event_media (cloudinary_url, source, guest_message) 
+      VALUES (${uploadResponse.secure_url}, ${source || 'camera'}, ${guestMessage ? guestMessage.trim() : null})
+    `;
 
     return NextResponse.json({ success: true, url: uploadResponse.secure_url });
   } catch (error) {
