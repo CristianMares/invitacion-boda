@@ -1,20 +1,11 @@
 'use client';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
-import { useRef } from "react";
 
-export default function AdminDashboardInteractiveMap({ decorations, tables, enteredMap }: any) {
-  const transformRef = useRef<any>(null);
-
+export default function AdminDashboardInteractiveMap({ decorations, tables, assignedMap, enteredMap }: any) {
   return (
     <div className="w-full h-[600px] bg-[#050505] border border-white/10 rounded-3xl relative shadow-2xl overflow-hidden flex flex-col justify-center items-center">
-      <TransformWrapper 
-        ref={transformRef}
-        initialScale={0.85} 
-        minScale={0.4} 
-        maxScale={4} 
-        centerOnInit
-      >
+      <TransformWrapper initialScale={0.85} minScale={0.3} maxScale={4} centerOnInit>
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className="absolute bottom-6 right-6 z-[600] bg-neutral-900/90 border border-white/10 rounded-2xl flex flex-col p-1.5 shadow-2xl backdrop-blur-md">
@@ -42,30 +33,43 @@ export default function AdminDashboardInteractiveMap({ decorations, tables, ente
                 ))}
 
                 {tables.map((t: any) => {
+                  const assigned = assignedMap[t.id] || 0;
                   const entered = enteredMap[t.id] || 0;
-                  const hasEnteredGuests = entered > 0;
+                  const hasEntered = entered > 0;
+                  const isAssigned = assigned > 0;
 
                   return (
                     <div
                       key={t.id}
-                      className={`absolute flex items-center justify-center rounded-full transition-all ${hasEnteredGuests ? 'z-[300]' : 'z-[150]'}`}
+                      className={`absolute flex items-center justify-center rounded-full transition-all ${
+                        hasEntered ? 'z-[300]' : isAssigned ? 'z-[200]' : 'z-[150]'
+                      }`}
                       style={{ left: `calc(${t.pos_x}% - 28px)`, top: `calc(${t.pos_y}% - 28px)`, width: '56px', height: '56px' }}
                     >
-                      {/* PULSO ESMERALDA DE PRESENTES EN SALÓN */}
-                      {hasEnteredGuests && (
+                      {/* ANIMACIÓN VERDE ESMERALDA (GENTE EN SALÓN) */}
+                      {hasEntered && (
                         <>
-                          <div className="absolute inset-[-12px] bg-emerald-500/20 rounded-full animate-pulse" />
-                          <div className="absolute inset-[-6px] border border-emerald-400 border-dashed rounded-full animate-[spin_6s_linear_infinite]" />
+                          <div className="absolute inset-[-14px] bg-emerald-500/20 rounded-full animate-pulse" />
+                          <div className="absolute inset-[-7px] border border-emerald-400 border-dashed rounded-full animate-[spin_5s_linear_infinite]" />
                         </>
                       )}
 
+                      {/* ANIMACIÓN DENSIDAD ÁMBAR (SOLO PLANIFICADA) */}
+                      {!hasEntered && isAssigned && (
+                        <div className="absolute inset-[-6px] border border-amber-500/50 rounded-full animate-pulse" />
+                      )}
+
                       <div className={`w-full h-full rounded-full flex flex-col items-center justify-center border-2 transition-all ${
-                        hasEnteredGuests 
-                          ? 'bg-emerald-600 border-white text-white shadow-[0_0_20px_rgba(16,185,129,0.8)]' 
-                          : 'bg-neutral-900 border-neutral-700 text-neutral-400'
+                        hasEntered 
+                          ? 'bg-emerald-600 border-white text-white shadow-[0_0_20px_rgba(16,185,129,0.9)]' 
+                          : isAssigned 
+                            ? 'bg-amber-500/20 border-amber-500 text-amber-400' 
+                            : 'bg-neutral-900 border-neutral-700 text-neutral-500'
                       }`}>
                         <span className="font-serif font-bold text-base">{t.table_number}</span>
-                        <span className="text-[8px] font-mono font-bold opacity-80">{entered} p.</span>
+                        <span className="text-[8px] font-mono font-bold opacity-90">
+                          {hasEntered ? `${entered} pres.` : `${assigned} asig.`}
+                        </span>
                       </div>
                     </div>
                   );
