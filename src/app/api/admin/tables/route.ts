@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
     const tables = await sql`SELECT * FROM tables ORDER BY table_number ASC`;
-    const decorations = await sql`SELECT * FROM decorations`;
+    const decorations = await sql`SELECT * FROM decorations ORDER BY COALESCE(z_index, 10) ASC`;
     return NextResponse.json({ success: true, tables, decorations });
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching layout' }, { status: 500 });
@@ -33,12 +33,12 @@ export async function POST(request: Request) {
       await sql`DELETE FROM tables`;
     }
 
-    // 2. Guardar Decoraciones
+    // 2. Guardar Decoraciones con z_index
     await sql`DELETE FROM decorations`;
     for (const d of decorations) {
       await sql`
-        INSERT INTO decorations (id, type, label, pos_x, pos_y, width, height, bg_color, rotation)
-        VALUES (${d.id}, ${d.type}, ${d.label}, ${d.pos_x}, ${d.pos_y}, ${d.width}, ${d.height}, ${d.bg_color || '#111111'}, ${d.rotation || 0})
+        INSERT INTO decorations (id, type, label, pos_x, pos_y, width, height, bg_color, rotation, z_index)
+        VALUES (${d.id}, ${d.type}, ${d.label}, ${d.pos_x}, ${d.pos_y}, ${d.width}, ${d.height}, ${d.bg_color || '#D4C4B7'}, ${d.rotation || 0}, ${d.z_index || 10})
       `;
     }
 

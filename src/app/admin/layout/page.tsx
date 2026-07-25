@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Plus, Trash2, BoxSelect } from 'lucide-react';
+import { Save, Plus, Trash2, BoxSelect, ArrowUp, ArrowDown } from 'lucide-react';
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -18,10 +18,10 @@ export default function LayoutBuilder() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tables' | 'decor'>('tables');
   
-  const [dragging, setDragging] = useState<{ id: string, type: 'table' | 'decor' } | null>(null);
+  // Arrastre con offset exacto para eliminar saltos bruscos
+  const [dragging, setDragging] = useState<{ id: string, type: 'table' | 'decor', offsetX: number, offsetY: number } | null>(null);
   const [resizing, setDraggingResize] = useState<{ id: string, handle: string, startX: number, startY: number, startW: number, startH: number } | null>(null);
 
-  // Bandera para evitar que el des-seleccionado se active justo después de redimensionar
   const wasResizingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +41,21 @@ export default function LayoutBuilder() {
   const handlePointerDown = (id: string, type: 'table' | 'decor', e: React.PointerEvent) => {
     e.stopPropagation();
     handleSelectObject(id, type);
-    setDragging({ id, type });
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const clickXPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    const clickYPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const item = type === 'table' ? tables.find(t => t.id === id) : decorations.find(d => d.id === id);
+    if (!item) return;
+
+    setDragging({
+      id,
+      type,
+      offsetX: clickXPercent - item.pos_x,
+      offsetY: clickYPercent - item.pos_y
+    });
   };
 
   const handleResizeStart = (id: string, handle: string, e: React.PointerEvent) => {
@@ -65,15 +79,19 @@ export default function LayoutBuilder() {
     const rect = containerRef.current.getBoundingClientRect();
 
     if (dragging) {
-      let x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-      let y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-      x = Math.max(0, Math.min(100, x));
-      y = Math.max(0, Math.min(100, y));
+      let cursorX = ((e.clientX - rect.left) / rect.width) * 100;
+      let cursorY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      let targetX = Math.round(cursorX - dragging.offsetX);
+      let targetY = Math.round(cursorY - dragging.offsetY);
+
+      targetX = Math.max(0, Math.min(100, targetX));
+      targetY = Math.max(0, Math.min(100, targetY));
 
       if (dragging.type === 'table') {
-        setTables(prev => prev.map(t => t.id === dragging.id ? { ...t, pos_x: x, pos_y: y } : t));
+        setTables(prev => prev.map(t => t.id === dragging.id ? { ...t, pos_x: targetX, pos_y: targetY } : t));
       } else {
-        setDecorations(prev => prev.map(d => d.id === dragging.id ? { ...d, pos_x: x, pos_y: y } : d));
+        setDecorations(prev => prev.map(d => d.id === dragging.id ? { ...d, pos_x: targetX, pos_y: targetY } : d));
       }
     }
 
@@ -97,10 +115,15 @@ export default function LayoutBuilder() {
   const handlePointerUp = () => {
     setDragging(null);
     setDraggingResize(null);
-    // Mantiene la bandera activa brevemente para que el evento click subsecuente no limpie el id
-    setTimeout(() => {
-      wasResizingRef.current = false;
-    }, 100);
+    setTimeout(() => { wasResizingRef.current = false; }, 100);
+  };
+
+  const adjustZIndex = (id: string, delta: number) => {
+    setDecorations(prev => prev.map(d => {
+      if (d.id !== id) return d;
+      const currentZ = d.z_index || 10;
+      return { ...d, z_index: Math.max(1, currentZ + delta) };
+    }));
   };
 
   const addTable = () => {
@@ -112,7 +135,7 @@ export default function LayoutBuilder() {
 
   const addDecoration = () => {
     const newId = generateUUID();
-    setDecorations([...decorations, { id: newId, type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#D4C4B7', rotation: 0 }]);
+    setDecorations([...decorations, { id: newId, type: 'rect', label: 'NUEVA ÁREA', pos_x: 50, pos_y: 50, width: 20, height: 10, bg_color: '#D4C4B7', rotation: 0, z_index: 10 }]);
     handleSelectObject(newId, 'decor');
   };
 
@@ -166,11 +189,22 @@ export default function LayoutBuilder() {
                     <button onClick={(e) => { e.stopPropagation(); setDecorations(decorations.filter(x => x.id !== d.id)); if (selectedId === d.id) setSelectedId(null); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
                   </div>
                   {selectedId === d.id && (
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
-                      <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
-                      <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
-                      <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
-                      <div><span className="text-[9px] text-neutral-500">COLOR</span><input type="color" value={d.bg_color || '#D4C4B7'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full h-6 bg-transparent cursor-pointer rounded" /></div>
+                    <div className="space-y-3 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                        <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                        <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                        <div><span className="text-[9px] text-neutral-500">COLOR</span><input type="color" value={d.bg_color || '#D4C4B7'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full h-6 bg-transparent cursor-pointer rounded" /></div>
+                      </div>
+
+                      {/* CONTROL DE CAPAS / Z-INDEX */}
+                      <div className="flex items-center justify-between bg-neutral-900 p-2 rounded-lg border border-neutral-800">
+                        <span className="text-[10px] text-neutral-400 font-mono">Capa (Profundidad): {d.z_index || 10}</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => adjustZIndex(d.id, -1)} title="Enviar atrás" className="p-1 bg-black rounded hover:bg-neutral-800 text-neutral-300"><ArrowDown size={12} /></button>
+                          <button onClick={() => adjustZIndex(d.id, 1)} title="Traer al frente" className="p-1 bg-black rounded hover:bg-neutral-800 text-neutral-300"><ArrowUp size={12} /></button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -207,7 +241,7 @@ export default function LayoutBuilder() {
                 onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)}
                 onClick={(e) => handleSelectObject(d.id, 'decor', e)}
                 className={`absolute rounded flex items-center justify-center cursor-grab active:cursor-grabbing ${
-                  isSelected ? 'ring-2 ring-amber-500 z-30' : 'z-10'
+                  isSelected ? 'ring-2 ring-amber-500' : ''
                 }`}
                 style={{
                   left: `${d.pos_x}%`,
@@ -216,6 +250,7 @@ export default function LayoutBuilder() {
                   height: `${d.height}%`,
                   backgroundColor: d.bg_color || '#D4C4B7',
                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`,
+                  zIndex: isSelected ? 99 : (d.z_index || 10)
                 }}
               >
                 <span className="text-[10px] font-mono font-bold text-neutral-800 uppercase tracking-widest text-center pointer-events-none px-1">
@@ -226,7 +261,7 @@ export default function LayoutBuilder() {
                   <div 
                     onPointerDown={(e) => handleResizeStart(d.id, 'rb', e)}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 border border-black rounded-full cursor-se-resize translate-x-1/2 translate-y-1/2 z-50 shadow-md"
+                    className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 border border-black rounded-full cursor-se-resize translate-x-1/2 translate-y-1/2 z-[100] shadow-md"
                   />
                 )}
               </div>
@@ -241,7 +276,7 @@ export default function LayoutBuilder() {
                 onPointerDown={(e) => handlePointerDown(t.id, 'table', e)}
                 onClick={(e) => handleSelectObject(t.id, 'table', e)}
                 className={`absolute w-14 h-14 bg-[#165A72] border-2 border-[#0E3D4D] rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing shadow-md ${
-                  isSelected ? 'ring-4 ring-amber-500 scale-110 z-40' : 'z-20'
+                  isSelected ? 'ring-4 ring-amber-500 scale-110 z-[200]' : 'z-[150]'
                 }`}
                 style={{
                   left: `${t.pos_x}%`,
