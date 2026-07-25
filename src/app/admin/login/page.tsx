@@ -17,7 +17,6 @@ export default async function AdminLogin({
     if (pin === correctPin) {
       const cookieStore = await cookies();
       
-      // Expira en 8 horas (8 horas * 60 min * 60 seg)
       const HOURS_EXPIRATION = 8;
       const maxAge = 60 * 60 * HOURS_EXPIRATION;
 
