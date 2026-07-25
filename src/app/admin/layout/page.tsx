@@ -21,6 +21,8 @@ export default function LayoutBuilder() {
   const [dragging, setDragging] = useState<{ id: string, type: 'table' | 'decor' } | null>(null);
   const [resizing, setDraggingResize] = useState<{ id: string, handle: string, startX: number, startY: number, startW: number, startH: number } | null>(null);
 
+  // Bandera para evitar que el des-seleccionado se active justo después de redimensionar
+  const wasResizingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export default function LayoutBuilder() {
 
   const handleResizeStart = (id: string, handle: string, e: React.PointerEvent) => {
     e.stopPropagation();
+    e.preventDefault();
+    wasResizingRef.current = true;
     const item = decorations.find(d => d.id === id);
     if (!item) return;
     setDraggingResize({
@@ -93,6 +97,10 @@ export default function LayoutBuilder() {
   const handlePointerUp = () => {
     setDragging(null);
     setDraggingResize(null);
+    // Mantiene la bandera activa brevemente para que el evento click subsecuente no limpie el id
+    setTimeout(() => {
+      wasResizingRef.current = false;
+    }, 100);
   };
 
   const addTable = () => {
@@ -185,7 +193,7 @@ export default function LayoutBuilder() {
         <div 
           ref={containerRef}
           onClick={(e) => {
-            if (e.target === containerRef.current) {
+            if (e.target === containerRef.current && !wasResizingRef.current) {
               setSelectedId(null);
             }
           }}
