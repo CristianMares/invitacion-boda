@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Camera, Image as ImageIcon, Home } from 'lucide-react';
+import { Menu, X, Camera, Image as ImageIcon, Home, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
@@ -22,6 +22,7 @@ export default function Navbar() {
 
   const menuItems = [
     { name: 'Inicio', href: '/', icon: Home },
+    { name: 'Consultar Pase', href: '/consulta', icon: Search },
     { name: 'Cámara Híbrida', href: '/camara', icon: Camera },
     { name: 'Galería de Fotos', href: '/galeria', icon: ImageIcon },
   ];

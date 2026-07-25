@@ -56,13 +56,16 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
   };
 
   const markWhatsAppSent = async (id: string, phoneToUse: string) => {
-    setGuests(prev => prev.map(g => g.id === id ? { ...g, sent_wa: true } : g));
+    setGuests(prev => prev.map((g: any) => g.id === id ? { ...g, sent_wa: true } : g));
     
     const ticketUrl = `https://invitacion-boda-bbmh.vercel.app/ticket/${id}`;
     const targetGuest = guests.find((g: any) => g.id === id);
+    
+    // Reemplazo dinámico que incluye {id}
     const message = waTemplate
       .replace('{nombre}', targetGuest?.full_name || '')
       .replace('{iniciales}', heroInitials)
+      .replace('{id}', id)
       .replace('{link}', ticketUrl);
 
     const waUrl = `https://wa.me/521${phoneToUse}?text=${encodeURIComponent(message)}`;

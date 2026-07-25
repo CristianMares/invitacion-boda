@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useState } from 'react';
-import { Send, CheckCircle2, User, Phone, Users, ArrowRight, ArrowLeft, Info } from 'lucide-react';
+import Link from 'next/link';
+import { Send, CheckCircle2, User, Phone, Users, ArrowRight, ArrowLeft, Info, Search } from 'lucide-react';
 
 export default function RSVP() {
   const [step, setStep] = useState(1);
@@ -39,44 +40,49 @@ export default function RSVP() {
       const data = await res.json();
       if (data.success) setStatus('success');
       else setStatus('error');
-    } catch (error) {
+    } catch {
       setStatus('error');
     }
   };
 
   if (status === 'success') {
     return (
-      <div className="max-w-md mx-auto mt-8 bg-neutral-900/80 backdrop-blur-md p-8 rounded-2xl border border-emerald-500/30 text-center animate-in fade-in zoom-in duration-500">
-        <CheckCircle2 size={56} className="text-emerald-400 mx-auto mb-6" />
-        <h3 className="text-2xl font-serif text-white mb-2">Solicitud Recibida</h3>
-        <p className="text-neutral-400 mb-6 text-sm">Registro completado para {formData.ticketsRequested} pase(s).</p>
+      <div className="max-w-md mx-auto mt-8 bg-neutral-900/80 backdrop-blur-md p-8 rounded-2xl border border-emerald-500/30 text-center animate-in fade-in zoom-in duration-500 space-y-6">
+        <CheckCircle2 size={56} className="text-emerald-400 mx-auto" />
+        <div>
+          <h3 className="text-2xl font-serif text-white mb-1">Solicitud Recibida</h3>
+          <p className="text-neutral-400 text-sm font-mono">Registro completado para {formData.ticketsRequested} pase(s).</p>
+        </div>
         <div className="bg-emerald-950/50 p-4 rounded-xl border border-emerald-500/20 text-left">
           <div className="flex gap-3 items-start">
             <Info size={20} className="text-emerald-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-emerald-100/80">
-              En Octubre te enviaremos un mensaje por WhatsApp al <strong>{formData.phone}</strong> para entregarte los códigos QR de acceso.
+            <p className="text-xs text-emerald-100/90 leading-relaxed font-mono">
+              Te enviaremos un mensaje por WhatsApp al <strong>{formData.phone}</strong> cuando tus pases sean aprobados.
             </p>
           </div>
         </div>
+        <Link href="/consulta" className="inline-flex items-center gap-2 text-xs font-mono text-amber-400 underline hover:text-white">
+          <Search size={14} /> Consultar estado de mi pase
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto mt-8 bg-neutral-900/60 p-6 sm:p-8 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl">
-      {/* Indicador de Pasos */}
+    <div className="max-w-md mx-auto mt-8 bg-neutral-900/60 p-6 sm:p-8 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl space-y-6">
+      
       {formData.ticketsRequested > 1 && (
-        <div className="flex items-center justify-center gap-2 mb-8">
+        <div className="flex items-center justify-center gap-2 mb-4">
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-amber-500' : 'bg-neutral-800'}`} />
           <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-amber-500' : 'bg-neutral-800'}`} />
         </div>
       )}
 
       {step === 1 && (
-        <form onSubmit={handleNextStep} className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4">
-          <div className="text-left mb-2">
+        <form onSubmit={handleNextStep} className="flex flex-col gap-5 animate-in fade-in">
+          <div className="text-left mb-1">
             <h3 className="text-white font-serif text-xl">Datos del Titular</h3>
-            <p className="text-neutral-500 text-sm">Quien recibirá los pases por WhatsApp.</p>
+            <p className="text-neutral-500 text-xs font-mono">Quien recibirá los pases por WhatsApp.</p>
           </div>
 
           <div className="relative">
@@ -88,7 +94,7 @@ export default function RSVP() {
               placeholder="Nombre Completo" 
               value={formData.fullName} 
               onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-              className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/50 border border-neutral-800 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:text-neutral-600"
+              className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/50 border border-neutral-800 text-white focus:border-amber-500 outline-none transition-all text-sm"
               required
             />
           </div>
@@ -99,10 +105,10 @@ export default function RSVP() {
             </div>
             <input 
               type="tel" 
-              placeholder="Número de WhatsApp" 
+              placeholder="Número de WhatsApp (10 dígitos)" 
               value={formData.phone} 
               onChange={(e) => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})}
-              className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/50 border border-neutral-800 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all placeholder:text-neutral-600"
+              className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/50 border border-neutral-800 text-white focus:border-amber-500 outline-none transition-all text-sm font-mono"
               required
               minLength={10}
               maxLength={15}
@@ -116,7 +122,7 @@ export default function RSVP() {
             <select 
               value={formData.ticketsRequested}
               onChange={(e) => setFormData({...formData, ticketsRequested: Number(e.target.value)})}
-              className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/50 border border-neutral-800 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all appearance-none"
+              className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/50 border border-neutral-800 text-white focus:border-amber-500 outline-none transition-all appearance-none text-sm"
             >
               {[1, 2, 3, 4, 5].map(num => (
                 <option key={num} value={num} className="bg-neutral-900">
@@ -126,50 +132,50 @@ export default function RSVP() {
             </select>
           </div>
 
-          <button type="submit" className="mt-4 bg-white text-black hover:bg-neutral-200 w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-            {formData.ticketsRequested > 1 ? <>Siguiente <ArrowRight size={18} /></> : <>Enviar Solicitud <Send size={18} /></>}
+          <button type="submit" className="mt-2 bg-white text-black hover:bg-neutral-200 w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-xs uppercase tracking-wider">
+            {formData.ticketsRequested > 1 ? <>Siguiente <ArrowRight size={16} /></> : <>Enviar Solicitud <Send size={16} /></>}
           </button>
         </form>
       )}
 
       {step === 2 && (
-        <form onSubmit={(e) => { e.preventDefault(); submitData(); }} className="flex flex-col gap-5 animate-in fade-in slide-in-from-right-4">
-          <div className="text-left mb-2 flex items-center gap-4">
+        <form onSubmit={(e) => { e.preventDefault(); submitData(); }} className="flex flex-col gap-5 animate-in fade-in">
+          <div className="text-left mb-1 flex items-center gap-3">
             <button type="button" onClick={() => setStep(1)} className="p-2 bg-neutral-800 rounded-full hover:bg-neutral-700 text-white">
               <ArrowLeft size={16} />
             </button>
             <div>
               <h3 className="text-white font-serif text-xl">Acompañantes</h3>
-              <p className="text-neutral-500 text-sm">Detalla tus {formData.ticketsRequested - 1} pases extra.</p>
+              <p className="text-neutral-500 text-xs font-mono">Detalla tus {formData.ticketsRequested - 1} pases extra.</p>
             </div>
           </div>
 
-          <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-6 scrollbar-thin scrollbar-thumb-neutral-700">
+          <div className="max-h-[40vh] overflow-y-auto pr-1 space-y-4">
             {Array.from({ length: formData.ticketsRequested - 1 }).map((_, i) => (
-              <div key={i} className="space-y-3 p-4 bg-black/30 rounded-xl border border-neutral-800/50">
-                <p className="text-xs text-amber-500 font-bold uppercase tracking-widest">Pase {i + 2}</p>
+              <div key={i} className="space-y-2 p-3.5 bg-black/40 rounded-2xl border border-neutral-800">
+                <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest font-mono">Pase {i + 2}</p>
                 <input 
                   type="text" 
-                  placeholder="Nombre de la persona" 
+                  placeholder="Nombre completo" 
                   value={companions[i].fullName}
                   onChange={(e) => {
                     const newComps = [...companions];
                     newComps[i].fullName = e.target.value;
                     setCompanions(newComps);
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-black/50 border border-neutral-800 text-white focus:border-amber-500 outline-none text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-neutral-800 text-white focus:border-amber-500 outline-none text-xs"
                   required
                 />
                 <input 
                   type="text" 
-                  placeholder="Descripción (Ej. Esposa, Amigo)" 
+                  placeholder="Descripción (Ej. Esposa, Hijo)" 
                   value={companions[i].description}
                   onChange={(e) => {
                     const newComps = [...companions];
                     newComps[i].description = e.target.value;
                     setCompanions(newComps);
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-black/50 border border-neutral-800 text-white focus:border-amber-500 outline-none text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-neutral-800 text-white focus:border-amber-500 outline-none text-xs"
                 />
               </div>
             ))}
@@ -178,18 +184,20 @@ export default function RSVP() {
           <button 
             type="submit" 
             disabled={status === 'loading'}
-            className="mt-4 bg-amber-600 hover:bg-amber-700 text-white w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 active:scale-[0.98]"
+            className="mt-2 bg-amber-600 hover:bg-amber-500 text-black w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 text-xs uppercase tracking-wider"
           >
-            {status === 'loading' ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>Confirmar Registro <Send size={18} /></>}
+            {status === 'loading' ? <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <>Confirmar Registro <Send size={16} /></>}
           </button>
         </form>
       )}
 
-      {status === 'error' && (
-        <p className="mt-4 text-red-400 text-sm text-center bg-red-900/20 p-3 rounded-lg border border-red-500/30 animate-in fade-in">
-          Error de conexión. Intenta nuevamente.
-        </p>
-      )}
+      {/* ENLACE PERMANENTE A PÁGINA DE CONSULTA */}
+      <div className="pt-2 border-t border-white/5 text-center">
+        <Link href="/consulta" className="inline-flex items-center gap-2 text-xs font-mono text-neutral-400 hover:text-amber-400 transition-colors">
+          <Search size={14} className="text-amber-500" /> ¿Ya solicitaste tu pase? Consultar aquí
+        </Link>
+      </div>
+
     </div>
   );
 }
