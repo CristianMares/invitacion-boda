@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import AdminDashboardInteractiveMap from '@/components/AdminDashboardInteractiveMap';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,15 +14,30 @@ export default async function AdminDashboard() {
     FROM guests
   `;
 
-  const tables = await sql`SELECT * FROM tables`;
+  const tables = await sql`SELECT * FROM tables ORDER BY table_number ASC`;
   const decorations = await sql`SELECT * FROM decorations ORDER BY COALESCE(z_index, 10) ASC`;
 
-  const guestsOccupancy = await sql`SELECT table_id, COUNT(*) as cnt FROM guests WHERE table_id IS NOT NULL GROUP BY table_id`;
-  const companionsOccupancy = await sql`SELECT table_id, COUNT(*) as cnt FROM companions WHERE table_id IS NOT NULL GROUP BY table_id`;
+  // Asignados (Planificación)
+  const assignedGuests = await sql`SELECT table_id, COUNT(*) as cnt FROM guests WHERE table_id IS NOT NULL GROUP BY table_id`;
+  const assignedCompanions = await sql`SELECT table_id, COUNT(*) as cnt FROM companions WHERE table_id IS NOT NULL GROUP BY table_id`;
 
-  const occupancyMap: Record<string, number> = {};
-  guestsOccupancy.forEach(r => occupancyMap[r.table_id] = Number(r.cnt));
-  companionsOccupancy.forEach(r => { occupancyMap[r.table_id] = (occupancyMap[r.table_id] || 0) + Number(r.cnt); });
+  // En Salón (Check-in Real)
+  const enteredGuests = await sql`SELECT table_id, COUNT(*) as cnt FROM guests WHERE table_id IS NOT NULL AND has_entered = true GROUP BY table_id`;
+  const enteredCompanions = await sql`
+    SELECT c.table_id, COUNT(*) as cnt 
+    FROM companions c 
+    JOIN guests g ON c.guest_id = g.id 
+    WHERE c.table_id IS NOT NULL AND g.has_entered = true 
+    GROUP BY c.table_id
+  `;
+
+  const assignedMap: Record<string, number> = {};
+  assignedGuests.forEach(r => assignedMap[r.table_id] = Number(r.cnt));
+  assignedCompanions.forEach(r => { assignedMap[r.table_id] = (assignedMap[r.table_id] || 0) + Number(r.cnt); });
+
+  const enteredMap: Record<string, number> = {};
+  enteredGuests.forEach(r => enteredMap[r.table_id] = Number(r.cnt));
+  enteredCompanions.forEach(r => { enteredMap[r.table_id] = (enteredMap[r.table_id] || 0) + Number(r.cnt); });
 
   const stats = metrics[0];
   const totalApproved = stats.total_approved_pases || 0;
@@ -34,53 +50,44 @@ export default async function AdminDashboard() {
         <div className="flex items-center justify-between border-b border-white/5 pb-4">
           <div>
             <h1 className="text-3xl font-serif text-white tracking-wide">Command Center</h1>
-            <p className="text-emerald-500 text-xs mt-1 font-mono animate-pulse">● En vivo</p>
+            <p className="text-emerald-500 text-xs mt-1 font-mono animate-pulse">● Monitor en Vivo</p>
           </div>
         </div>
 
+        {/* METRICAS CLAVE */}
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-neutral-950 border border-white/10 p-6 rounded-2xl">
             <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-mono">Pases Aprobados</p>
             <p className="text-4xl font-serif text-white mt-1">{totalApproved}</p>
           </div>
           <div className="bg-neutral-950 border border-emerald-500/30 p-6 rounded-2xl">
-            <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-mono">Check-ins</p>
+            <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-mono">Personas en Salón (Check-in)</p>
             <p className="text-4xl font-serif text-emerald-400 mt-1">{totalCheckedIn}</p>
           </div>
-          <div className="bg-neutral-950 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-            <div>
-              <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-mono">Asistencia</p>
-              <p className="text-4xl font-serif text-white mt-1">{percentage}%</p>
-            </div>
+          <div className="bg-neutral-950 border border-white/10 p-6 rounded-2xl">
+            <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-mono">Porcentaje de Asistencia</p>
+            <p className="text-4xl font-serif text-white mt-1">{percentage}%</p>
           </div>
         </div>
 
-        <div className="w-full aspect-[16/10] max-w-5xl mx-auto bg-neutral-950 border-2 border-neutral-900 rounded-3xl relative shadow-2xl overflow-hidden mt-8">
-          {decorations.map(d => (
-            <div key={d.id} className="absolute border border-black/20 flex items-center justify-center"
-                 style={{ 
-                   left: `${d.pos_x}%`, top: `${d.pos_y}%`, 
-                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, 
-                   width: `${d.width}%`, height: `${d.height}%`,
-                   backgroundColor: d.bg_color || '#D4C4B7',
-                   zIndex: d.z_index || 10
-                 }}>
-              <span className="text-[10px] md:text-xs font-mono font-bold text-neutral-800 uppercase text-center">{d.label}</span>
-            </div>
-          ))}
-
-          {tables.map(t => {
-            const occupants = occupancyMap[t.id] || 0;
-            const isOccupied = occupants > 0;
-            return (
-              <div key={t.id} className="absolute w-12 h-12 md:w-16 md:h-16 border-2 rounded-full flex flex-col items-center justify-center shadow-lg z-[200]"
-                   style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', backgroundColor: isOccupied ? `rgba(245,158,11,${Math.min(occupants * 0.1, 0.8)})` : '#171717', borderColor: isOccupied ? '#f59e0b' : '#333' }}>
-                <span className="text-white font-serif font-bold text-sm md:text-lg">{t.table_number}</span>
-                <span className="text-[8px] md:text-[10px] font-mono font-bold text-neutral-400">{occupants}/{t.capacity}</span>
-              </div>
-            );
-          })}
+        {/* SIMBOLOGÍA E LEYENDA */}
+        <div className="flex flex-wrap gap-6 items-center justify-center bg-neutral-950/80 p-4 rounded-2xl border border-white/5 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-white border border-[#D4C4B7]" />
+            <span>Mesa Libre</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[#8C6239] border border-[#4A3320]" />
+            <span>Asignada (Plan)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-emerald-500 border border-white shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+            <span>Presente en Salón</span>
+          </div>
         </div>
+
+        {/* MAPA INTERACTIVO */}
+        <AdminDashboardInteractiveMap tables={tables as any} decorations={decorations as any} assignedMap={assignedMap} enteredMap={enteredMap} />
       </div>
     </div>
   );

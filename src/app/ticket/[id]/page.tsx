@@ -1,6 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { QRCodeSVG } from 'qrcode.react';
-import { CheckCircle2, AlertCircle, ShieldX, Clock, QrCode } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldX, Clock } from 'lucide-react';
 import VenueMap from '@/components/VenueMap';
 import TicketQRToggle from '@/components/TicketQRToggle';
 
@@ -46,53 +45,59 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     }, {});
 
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 md:p-8 relative selection:bg-amber-500 selection:text-black pb-20">
-        <div className="w-full max-w-xl bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 my-auto">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 md:p-12 relative selection:bg-amber-500 selection:text-black">
+        <div className="w-full max-w-5xl bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 my-auto">
           
+          {/* BANNER ENCABEZADO */}
           <div className="p-8 text-center relative overflow-hidden border-b border-white/5">
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600"></div>
-            <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-4 relative z-10" />
-            <h1 className="text-3xl md:text-4xl font-serif text-white relative z-10">{guest.full_name}</h1>
-            <div className="mt-4 inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest relative z-10">
+            <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3 relative z-10" />
+            <h1 className="text-3xl md:text-5xl font-serif text-white relative z-10">{guest.full_name}</h1>
+            <div className="mt-3 inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest relative z-10">
               {guest.has_entered ? '✓ Ingresó al Evento' : 'Acceso Confirmado'}
             </div>
           </div>
 
-          {/* COMPONENTE INTERACTIVO DE QR */}
-          <div className="p-8 text-center space-y-6 bg-neutral-950/50">
-            <TicketQRToggle guestId={guest.id} hasEntered={guest.has_entered} />
+          {/* GRID RESPONSIVO: EN PC SON 2 COLUMNAS, EN MÓVIL 1 */}
+          <div className="grid md:grid-cols-2 gap-8 p-6 md:p-10 items-center">
+            
+            {/* COLUMNA 1: QR DE ACCESO */}
+            <div className="text-center space-y-6 bg-neutral-950/50 p-6 rounded-3xl border border-white/5">
+              <TicketQRToggle guestId={guest.id} hasEntered={guest.has_entered} />
+            </div>
+
+            {/* COLUMNA 2: DETALLES DE MESA Y NAVEGACIÓN DE SALÓN */}
+            <div className="space-y-6">
+              {assignedTableIds.length > 0 && (
+                <div className="p-6 bg-black/60 rounded-3xl border border-amber-500/20 space-y-4 shadow-inner">
+                  <p className="text-xs text-amber-500 uppercase font-bold tracking-[0.2em] border-b border-white/5 pb-2">Distribución de Asientos</p>
+                  {Object.keys(membersByTableId).map(tId => {
+                    if (tId === 'unassigned') return null;
+                    const tableName = tables.find(t => t.id === tId)?.table_number;
+                    return (
+                      <div key={tId} className="space-y-1">
+                        <p className="text-xs font-mono font-bold text-white bg-neutral-900 inline-block px-3 py-1 rounded-lg">Mesa {tableName}</p>
+                        <ul className="pl-2 space-y-1 mt-1">
+                          {membersByTableId[tId].map((m: any) => (
+                            <li key={m.id} className="text-sm text-neutral-300 flex justify-between">
+                              <span>{m.name}</span>
+                              <span className="text-[10px] text-neutral-500 uppercase font-mono">{m.type}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* BARRIDO INTERACTIVO DEL MAPA */}
+              {assignedTableIds.length > 0 && (
+                <VenueMap assignedTableIds={assignedTableIds} tables={tables as any} decorations={decorations as any} />
+              )}
+            </div>
+
           </div>
-
-          {/* DESGLOSE DE ASIENTOS */}
-          {assignedTableIds.length > 0 && (
-            <div className="mx-8 mb-8 p-5 bg-black/50 rounded-2xl border border-amber-500/20 space-y-4 shadow-inner">
-              <p className="text-[10px] text-amber-500 uppercase font-bold tracking-[0.2em] mb-2 border-b border-white/5 pb-2">Distribución de Asientos</p>
-              {Object.keys(membersByTableId).map(tId => {
-                if (tId === 'unassigned') return null;
-                const tableName = tables.find(t => t.id === tId)?.table_number;
-                return (
-                  <div key={tId} className="space-y-1">
-                    <p className="text-xs font-mono font-bold text-white bg-neutral-900 inline-block px-2 py-1 rounded">Mesa {tableName}</p>
-                    <ul className="pl-2">
-                      {membersByTableId[tId].map((m: any) => (
-                        <li key={m.id} className="text-sm text-neutral-400 flex justify-between">
-                          <span>{m.name}</span>
-                          <span className="text-[9px] text-neutral-600 uppercase">{m.type}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* MAPA RESPONSIVO */}
-          {assignedTableIds.length > 0 && (
-            <div className="px-6 pb-8 overflow-hidden">
-              <VenueMap assignedTableIds={assignedTableIds} tables={tables as any} decorations={decorations as any} />
-            </div>
-          )}
 
         </div>
       </div>
