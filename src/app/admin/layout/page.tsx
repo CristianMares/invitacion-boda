@@ -30,9 +30,9 @@ export default function LayoutBuilder() {
     });
   }, []);
 
-  const handleSelectObject = (id: string, type: 'table' | 'decor') => {
+  const handleSelectObject = (id: string, type: 'table' | 'decor', e?: React.SyntheticEvent) => {
+    if (e) e.stopPropagation();
     setSelectedId(id);
-    // Cambia automáticamente de pestaña según el tipo seleccionado
     setActiveTab(type === 'table' ? 'tables' : 'decor');
   };
 
@@ -60,7 +60,6 @@ export default function LayoutBuilder() {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
 
-    // 1. Arrastre de posición
     if (dragging) {
       let x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
       let y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
@@ -74,7 +73,6 @@ export default function LayoutBuilder() {
       }
     }
 
-    // 2. Redimensión tirando de las esquinas
     if (resizing) {
       const deltaXPercent = ((e.clientX - resizing.startX) / rect.width) * 100;
       const deltaYPercent = ((e.clientY - resizing.startY) / rect.height) * 100;
@@ -136,13 +134,13 @@ export default function LayoutBuilder() {
             <>
               <button onClick={addTable} className="w-full bg-neutral-900 border border-white/10 py-3 rounded-xl flex justify-center gap-2 hover:bg-white hover:text-black font-bold mb-2 transition-all"><Plus size={16} /> Crear Mesa</button>
               {tables.map(t => (
-                <div key={t.id} onClick={() => handleSelectObject(t.id, 'table')} className={`p-3 rounded-xl border transition-all cursor-pointer space-y-2 ${selectedId === t.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
+                <div key={t.id} onClick={(e) => handleSelectObject(t.id, 'table', e)} className={`p-3 rounded-xl border transition-all cursor-pointer space-y-2 ${selectedId === t.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
                   <div className="flex justify-between items-center">
                     <p className="text-xs font-bold">Mesa {t.table_number}</p>
-                    <button onClick={(e) => { e.stopPropagation(); setTables(tables.filter(x => x.id !== t.id)); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); setTables(tables.filter(x => x.id !== t.id)); if (selectedId === t.id) setSelectedId(null); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
                   </div>
                   {selectedId === t.id && (
-                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
                       <span className="text-[10px] text-neutral-500">Capacidad personas:</span>
                       <input type="number" value={t.capacity} onChange={(e) => setTables(tables.map(tbl => tbl.id === t.id ? { ...tbl, capacity: Number(e.target.value) } : tbl))} className="w-16 bg-neutral-900 border border-neutral-700 text-xs px-2 py-1 rounded text-white outline-none" />
                     </div>
@@ -154,13 +152,13 @@ export default function LayoutBuilder() {
             <>
               <button onClick={addDecoration} className="w-full bg-neutral-900 border border-white/10 py-3 rounded-xl flex justify-center gap-2 hover:bg-white hover:text-black font-bold mb-2 transition-all"><BoxSelect size={16} /> Crear Área</button>
               {decorations.map(d => (
-                <div key={d.id} onClick={() => handleSelectObject(d.id, 'decor')} className={`p-3 rounded-xl border space-y-2 transition-all cursor-pointer ${selectedId === d.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
+                <div key={d.id} onClick={(e) => handleSelectObject(d.id, 'decor', e)} className={`p-3 rounded-xl border space-y-2 transition-all cursor-pointer ${selectedId === d.id ? 'bg-amber-500/10 border-amber-500' : 'bg-black border-white/5'}`}>
                   <div className="flex justify-between items-center">
-                    <input type="text" value={d.label} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, label: e.target.value } : dec))} className="bg-transparent text-xs font-bold w-3/4 outline-none border-b border-neutral-800 focus:border-amber-500" />
-                    <button onClick={(e) => { e.stopPropagation(); setDecorations(decorations.filter(x => x.id !== d.id)); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
+                    <input type="text" value={d.label} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, label: e.target.value } : dec))} className="bg-transparent text-xs font-bold w-3/4 outline-none border-b border-neutral-800 focus:border-amber-500" onClick={(e) => e.stopPropagation()} />
+                    <button onClick={(e) => { e.stopPropagation(); setDecorations(decorations.filter(x => x.id !== d.id)); if (selectedId === d.id) setSelectedId(null); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
                   </div>
                   {selectedId === d.id && (
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
                       <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
                       <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
                       <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
@@ -186,7 +184,11 @@ export default function LayoutBuilder() {
       >
         <div 
           ref={containerRef}
-          onClick={() => setSelectedId(null)}
+          onClick={(e) => {
+            if (e.target === containerRef.current) {
+              setSelectedId(null);
+            }
+          }}
           className="w-[1000px] h-[650px] bg-[#FAF7F2] border-2 border-neutral-800 rounded-2xl relative shadow-2xl flex-shrink-0 overflow-hidden"
         >
           {decorations.map(d => {
@@ -195,6 +197,7 @@ export default function LayoutBuilder() {
               <div
                 key={d.id}
                 onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)}
+                onClick={(e) => handleSelectObject(d.id, 'decor', e)}
                 className={`absolute rounded flex items-center justify-center cursor-grab active:cursor-grabbing ${
                   isSelected ? 'ring-2 ring-amber-500 z-30' : 'z-10'
                 }`}
@@ -211,10 +214,10 @@ export default function LayoutBuilder() {
                   {d.label}
                 </span>
 
-                {/* TIRADORES DE REDIMENSIÓN (PUNTOS EN LAS ESQUINAS AL SELECCIONAR) */}
                 {isSelected && (
                   <div 
                     onPointerDown={(e) => handleResizeStart(d.id, 'rb', e)}
+                    onClick={(e) => e.stopPropagation()}
                     className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 border border-black rounded-full cursor-se-resize translate-x-1/2 translate-y-1/2 z-50 shadow-md"
                   />
                 )}
@@ -228,6 +231,7 @@ export default function LayoutBuilder() {
               <div
                 key={t.id}
                 onPointerDown={(e) => handlePointerDown(t.id, 'table', e)}
+                onClick={(e) => handleSelectObject(t.id, 'table', e)}
                 className={`absolute w-14 h-14 bg-[#165A72] border-2 border-[#0E3D4D] rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing shadow-md ${
                   isSelected ? 'ring-4 ring-amber-500 scale-110 z-40' : 'z-20'
                 }`}
