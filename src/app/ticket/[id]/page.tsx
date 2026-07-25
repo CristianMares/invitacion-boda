@@ -1,7 +1,9 @@
 import { neon } from '@neondatabase/serverless';
-import { CheckCircle2, AlertCircle, ShieldX, Clock } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldX, Clock, Users, Utensils } from 'lucide-react';
 import VenueMap from '@/components/VenueMap';
 import TicketQRToggle from '@/components/TicketQRToggle';
+
+export const dynamic = 'force-dynamic';
 
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,23 +13,37 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     const guestRows = await sql`SELECT * FROM guests WHERE id = ${id}`;
     const guest = guestRows[0];
 
-    if (!guest) return <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center"><AlertCircle size={64} className="text-red-500 mb-4" /><h1 className="text-3xl font-serif">Pase Inexistente</h1></div>;
+    if (!guest) {
+      return (
+        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+          <AlertCircle size={64} className="text-red-500 mb-4 animate-bounce" />
+          <h1 className="text-3xl font-serif">Pase Inexistente</h1>
+          <p className="text-neutral-500 text-xs font-mono mt-2">El código de acceso no corresponde a ningún invitado registrado.</p>
+        </div>
+      );
+    }
 
     if (guest.status === 'pending') {
       return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
           <Clock size={64} className="text-amber-500 mb-6 animate-pulse relative z-10" />
           <h1 className="text-4xl font-serif mb-4 relative z-10">En Revisión</h1>
-          <p className="text-neutral-400 text-lg max-w-md relative z-10">Los novios están validando tu solicitud.</p>
+          <p className="text-neutral-400 text-sm max-w-md relative z-10 font-mono">Los novios están validando tu solicitud de pases.</p>
         </div>
       );
     }
+
     if (guest.status === 'rejected') {
-      return <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center"><ShieldX size={64} className="text-red-500 mb-4" /><h1 className="text-3xl font-serif text-white">Solicitud Declinada</h1></div>;
+      return (
+        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+          <ShieldX size={64} className="text-red-500 mb-4" />
+          <h1 className="text-3xl font-serif text-white">Solicitud Declinada</h1>
+        </div>
+      );
     }
 
     const companions = await sql`SELECT * FROM companions WHERE guest_id = ${id}`;
-    const tables = await sql`SELECT * FROM tables`;
+    const tables = await sql`SELECT * FROM tables ORDER BY table_number ASC`;
     const decorations = await sql`SELECT * FROM decorations ORDER BY COALESCE(z_index, 10) ASC`;
 
     const allMembers = [
@@ -44,7 +60,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       return acc;
     }, {});
 
-    // ← NUEVO: asignaciones de nombres para el mapa
     const memberAssignments = allMembers
       .filter(m => m.table_id)
       .map(m => ({
@@ -53,43 +68,52 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       }));
 
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 md:p-12 relative selection:bg-amber-500 selection:text-black">
-        <div className="w-full max-w-5xl bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 my-auto">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 md:p-10 selection:bg-amber-500 selection:text-black">
+        
+        {/* BOLETO DIGITAL CONTENEDOR TIPO PASS */}
+        <div className="w-full max-w-2xl bg-neutral-950 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
           
-          {/* BANNER ENCABEZADO */}
-          <div className="p-8 text-center relative overflow-hidden border-b border-white/5">
+          {/* ENCABEZADO BOLETO VIP */}
+          <header className="p-8 text-center bg-gradient-to-b from-neutral-900 to-neutral-950 border-b border-white/5 relative">
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600"></div>
-            <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3 relative z-10" />
-            <h1 className="text-3xl md:text-5xl font-serif text-white relative z-10">{guest.full_name}</h1>
-            <div className="mt-3 inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest relative z-10">
-              {guest.has_entered ? '✓ Ingresó al Evento' : 'Acceso Confirmado'}
-            </div>
-          </div>
-
-          {/* GRID RESPONSIVO: EN PC SON 2 COLUMNAS, EN MÓVIL 1 */}
-          <div className="grid md:grid-cols-2 gap-8 p-6 md:p-10 items-center">
+            <CheckCircle2 size={44} className="text-emerald-400 mx-auto mb-3" />
+            <span className="text-[10px] font-mono text-amber-500 uppercase tracking-[0.3em] font-bold">Pase Oficial de Acceso</span>
+            <h1 className="text-3xl md:text-5xl font-serif text-white mt-1">{guest.full_name}</h1>
             
-            {/* COLUMNA 1: QR DE ACCESO */}
-            <div className="text-center space-y-6 bg-neutral-950/50 p-6 rounded-3xl border border-white/5">
+            <div className="mt-4 inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest font-mono">
+              {guest.has_entered ? '✓ Confirmado en Salón' : 'Acceso Confirmado'}
+            </div>
+          </header>
+
+          <div className="p-6 md:p-8 space-y-8">
+            
+            {/* CÓDIGO QR */}
+            <div className="bg-black/60 p-6 rounded-3xl border border-white/5 text-center">
               <TicketQRToggle guestId={guest.id} hasEntered={guest.has_entered} />
             </div>
 
-            {/* COLUMNA 2: DETALLES DE MESA Y NAVEGACIÓN DE SALÓN */}
-            <div className="space-y-6">
-              {assignedTableIds.length > 0 && (
-                <div className="p-6 bg-black/60 rounded-3xl border border-amber-500/20 space-y-4 shadow-inner">
-                  <p className="text-xs text-amber-500 uppercase font-bold tracking-[0.2em] border-b border-white/5 pb-2">Distribución de Asientos</p>
+            {/* ASIGNACIÓN DE ASIENTOS Y MESAS */}
+            {assignedTableIds.length > 0 && (
+              <div className="bg-neutral-900/50 p-6 rounded-3xl border border-amber-500/20 space-y-4">
+                <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                  <Utensils size={18} className="text-amber-500" />
+                  <h3 className="text-sm font-mono text-amber-400 uppercase font-bold tracking-wider">Ubicación de Asientos</h3>
+                </div>
+
+                <div className="grid gap-3">
                   {Object.keys(membersByTableId).map(tId => {
                     if (tId === 'unassigned') return null;
                     const tableName = tables.find(t => t.id === tId)?.table_number;
                     return (
-                      <div key={tId} className="space-y-1">
-                        <p className="text-xs font-mono font-bold text-white bg-neutral-900 inline-block px-3 py-1 rounded-lg">Mesa {tableName}</p>
-                        <ul className="pl-2 space-y-1 mt-1">
+                      <div key={tId} className="bg-black p-4 rounded-2xl border border-white/5 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">MESA {tableName}</span>
+                        </div>
+                        <ul className="divide-y divide-white/5 pt-1">
                           {membersByTableId[tId].map((m: any) => (
-                            <li key={m.id} className="text-sm text-neutral-300 flex justify-between">
-                              <span>{m.name}</span>
-                              <span className="text-[10px] text-neutral-500 uppercase font-mono">{m.type}</span>
+                            <li key={m.id} className="py-2 text-xs md:text-sm text-neutral-200 flex justify-between items-center">
+                              <span className="font-medium">{m.name}</span>
+                              <span className="text-[9px] font-mono text-neutral-500 uppercase">{m.type}</span>
                             </li>
                           ))}
                         </ul>
@@ -97,18 +121,18 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                     );
                   })}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* BARRIDO INTERACTIVO DEL MAPA */}
-              {assignedTableIds.length > 0 && (
-                <VenueMap
-                  assignedTableIds={assignedTableIds}
-                  tables={tables as any}
-                  decorations={decorations as any}
-                  memberAssignments={memberAssignments}
-                />
-              )}
-            </div>
+            {/* MAPA INTERACTIVO */}
+            {assignedTableIds.length > 0 && (
+              <VenueMap 
+                assignedTableIds={assignedTableIds} 
+                tables={tables as any} 
+                decorations={decorations as any} 
+                memberAssignments={memberAssignments} 
+              />
+            )}
 
           </div>
 
@@ -116,6 +140,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       </div>
     );
   } catch (error) {
-    return <div className="text-white bg-black min-h-screen flex items-center justify-center font-mono">Error Interno de Servidor</div>;
+    return <div className="text-white bg-black min-h-screen flex items-center justify-center font-mono">Error al cargar boleto digital.</div>;
   }
 }
