@@ -1,13 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, LayoutTemplate, QrCode, Image as ImageIcon, LogOut, Menu, X } from 'lucide-react';
-import { Settings } from 'lucide-react';
+import { LayoutDashboard, Users, LayoutTemplate, QrCode, Image as ImageIcon, LogOut, Menu, X, Settings } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [initials, setInitials] = useState('M & X');
+
+  useEffect(() => {
+    fetch('/api/admin/config').then(res => res.json()).then(data => {
+      if (data.success && data.config?.hero_info?.initials) {
+        setInitials(data.config.hero_info.initials);
+      }
+    });
+  }, []);
 
   if (pathname === '/admin/login') return <>{children}</>;
 
@@ -44,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className={`fixed md:relative inset-y-0 left-0 w-64 bg-neutral-950 border-r border-white/5 flex flex-col z-[70] shadow-2xl transition-transform duration-300 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-6 border-b border-white/5 flex justify-between items-center">
           <div>
-            <h2 className="text-amber-500 font-serif italic text-2xl">M & X</h2>
+            <h2 className="text-amber-500 font-serif italic text-2xl">{initials}</h2>
             <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mt-1">Admin OS</p>
           </div>
           <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-neutral-500 hover:text-white"><X size={20} /></button>

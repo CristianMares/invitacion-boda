@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import AudioPlayer from "@/components/AudioPlayer";
+import { neon } from '@neondatabase/serverless';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,10 +15,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "M & X | Nuestra Boda",
-  description: "Invitación oficial y registro de pases.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
+    const rows = await sql`SELECT key, value FROM event_config WHERE key = 'hero_info'`;
+    const hero = rows[0]?.value || {};
+
+    const initials = hero.initials || "M & X";
+    const subtitle = hero.subtitle || "Nuestra Boda";
+    const description = hero.description || "Invitación oficial y registro de pases.";
+
+    return {
+      title: `${initials} | ${subtitle}`,
+      description: description,
+    };
+  } catch {
+    return {
+      title: "M & X | Nuestra Boda",
+      description: "Invitación oficial y registro de pases.",
+    };
+  }
+}
 
 export default function RootLayout({
   children,

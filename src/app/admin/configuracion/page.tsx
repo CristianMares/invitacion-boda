@@ -12,7 +12,7 @@ export default function AdminConfiguracion() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [activePreviewModal, setActivePreviewModal] = useState<string | null>(null);
 
-  const [heroInfo, setHeroInfo] = useState({ initials: 'M & X', subtitle: 'Nuestra Boda', description: 'Nos casamos...' });
+  const [heroInfo, setHeroInfo] = useState({ initials: 'M & X', subtitle: 'Nuestra Boda', description: 'Nos casamos, y queremos que seas parte de nuestra historia.' });
   const [weddingDate, setWeddingDate] = useState('2026-12-31T20:00:00');
   const [venueInfo, setVenueInfo] = useState({ name: '', location: '', maps_url: '' });
   const [dressCode, setDressCode] = useState({ title: '', note: '', colors: [] as string[] });
@@ -84,6 +84,23 @@ export default function AdminConfiguracion() {
     setGiftRegistry({ ...giftRegistry, links: list });
   };
 
+  // Formato para la previsualización de fecha
+  const dateObj = new Date(weddingDate);
+  const formattedDateText = isNaN(dateObj.getTime())
+    ? ''
+    : dateObj.toLocaleDateString('es-MX', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+  const capitalizedDateText = formattedDateText
+    ? formattedDateText.charAt(0).toUpperCase() + formattedDateText.slice(1)
+    : '';
+
   if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando CMS...</div>;
 
   return (
@@ -149,7 +166,7 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 3. DRESS CODE Y PALETA DE COLORES EN TEXTO HEX */}
+        {/* 3. DRESS CODE Y PALETA DE COLORES */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Shirt size={18} /> Código de Vestimenta</h3>
@@ -326,7 +343,7 @@ export default function AdminConfiguracion() {
 
       </div>
 
-      {/* MODAL DE PREVISUALIZACIÓN VISTA REAL */}
+      {/* MODAL DE PREVISUALIZACIÓN VISTA REAL COMPLETA */}
       {activePreviewModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[999] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-neutral-950 border border-white/10 rounded-3xl p-6 md:p-8 max-w-2xl w-full relative shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
@@ -347,6 +364,11 @@ export default function AdminConfiguracion() {
               {activePreviewModal === 'date' && (
                 <div className="text-center space-y-6 p-4">
                   <h4 className="text-amber-500 font-mono text-xs uppercase tracking-widest">El Gran Día</h4>
+                  {capitalizedDateText && (
+                    <p className="text-amber-400 font-serif text-xl italic">
+                      {capitalizedDateText}
+                    </p>
+                  )}
                   <Countdown targetDate={weddingDate} />
                   <CalendarButton />
                 </div>

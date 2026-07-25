@@ -37,34 +37,39 @@ export default function VenueMap({ assignedTableIds, tables, decorations, member
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[500] flex flex-col animate-in fade-in duration-300 overflow-hidden">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[99999] flex flex-col overflow-hidden animate-in fade-in duration-300">
           
-          {/* HEADER RESPONSIVO OPTIMIZADO PARA MÓVILES */}
-          <div className="p-4 z-[600] flex justify-between items-start gap-3 bg-neutral-900/90 border-b border-white/10 shadow-2xl">
-            <div className="space-y-1 overflow-hidden">
-              <h3 className="text-amber-400 font-serif text-base font-bold">Croquis del Evento</h3>
+          {/* HEADER FIJO GARANTIZADO */}
+          <header className="w-full bg-neutral-950 border-b border-white/10 p-4 md:px-8 z-[100000] flex justify-between items-center shadow-2xl shrink-0">
+            <div className="space-y-1 overflow-hidden pr-4">
+              <h3 className="text-amber-400 font-serif text-base md:text-lg font-bold">Croquis del Evento</h3>
               {memberAssignments && memberAssignments.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                <div className="flex flex-wrap gap-2 max-h-16 overflow-y-auto">
                   {memberAssignments.map((m, i) => (
-                    <span key={i} className="text-[10px] font-mono bg-black px-2 py-0.5 rounded border border-white/10 text-neutral-300">
-                      {m.name}: <strong className="text-amber-400">Mesa {m.tableName}</strong>
+                    <span key={i} className="text-[10px] md:text-xs font-mono bg-black px-2.5 py-1 rounded-lg border border-white/10 text-neutral-300">
+                      {m.name}: <strong className="text-amber-400 font-bold">Mesa {m.tableName}</strong>
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-neutral-300 font-mono">Mesa(s): <span className="text-white font-bold">{assignedTableNumbers}</span></p>
+                <p className="text-xs text-neutral-300 font-mono">Mesa(s) asignada(s): <span className="text-white font-bold">{assignedTableNumbers}</span></p>
               )}
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-2.5 bg-neutral-800 border border-white/10 rounded-full hover:bg-neutral-700 text-white shrink-0">
+
+            <button 
+              onClick={() => setIsOpen(false)} 
+              className="p-3 bg-neutral-900 border border-white/10 rounded-full hover:bg-neutral-800 text-white shrink-0 shadow-lg transition-colors"
+            >
               <X size={20} />
             </button>
-          </div>
+          </header>
 
-          <div className="w-full h-full relative flex items-center justify-center">
+          {/* CONTENEDOR DEL MAPA */}
+          <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center">
             <TransformWrapper ref={transformRef} initialScale={0.85} minScale={0.3} maxScale={4} centerOnInit>
               {({ zoomIn, zoomOut, resetTransform }) => (
                 <>
-                  <div className="absolute bottom-6 right-6 z-[600] bg-neutral-900/90 border border-white/10 rounded-2xl flex flex-col p-1.5 shadow-2xl backdrop-blur-md">
+                  <div className="absolute bottom-6 right-6 z-[100000] bg-neutral-900/90 border border-white/10 rounded-2xl flex flex-col p-1.5 shadow-2xl backdrop-blur-md">
                     <button onClick={() => zoomIn()} className="p-3 text-white hover:text-amber-400 border-b border-white/10"><ZoomIn size={20} /></button>
                     <button onClick={() => zoomOut()} className="p-3 text-white hover:text-amber-400 border-b border-white/10"><ZoomOut size={20} /></button>
                     <button onClick={() => resetTransform()} className="p-3 text-white hover:text-amber-400"><RotateCcw size={18} /></button>

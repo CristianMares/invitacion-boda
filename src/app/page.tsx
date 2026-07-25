@@ -18,16 +18,50 @@ export default async function Home() {
   const configMap: Record<string, any> = {};
   configRows.forEach(r => configMap[r.key] = r.value);
 
-  const weddingDate = configMap.wedding_date;
-  const venueInfo = configMap.venue_info;
-  const dressCode = configMap.dress_code;
-  const giftRegistry = configMap.gift_registry;
-  const itinerary = configMap.itinerary;
+  const heroInfo = configMap.hero_info || {
+    initials: 'M & X',
+    subtitle: 'Nuestra Boda',
+    description: 'Nos casamos, y queremos que seas parte de nuestra historia.'
+  };
+
+  const weddingDate = configMap.wedding_date || '2026-12-31T20:00:00';
+  const venueInfo = configMap.venue_info || { 
+    name: 'Hacienda Las Rosas', 
+    location: 'León, Guanajuato', 
+    maps_url: 'https://maps.google.com' 
+  };
+  const dressCode = configMap.dress_code || { 
+    title: 'Etiqueta Rigurosa', 
+    note: 'Estrictamente prohibido color blanco o derivados.', 
+    colors: ['#0a0a0a', '#1e293b', '#064e3b', '#4c0519'] 
+  };
+  const giftRegistry = configMap.gift_registry || { 
+    bank: { bank_name: 'BBVA', holder: 'Cristian Mares', clabe: '012180012345678901' }, 
+    links: [] 
+  };
+  const itinerary = configMap.itinerary || [];
+
+  // Formatear fecha en texto legible
+  const dateObj = new Date(weddingDate);
+  const formattedDateText = isNaN(dateObj.getTime())
+    ? ''
+    : dateObj.toLocaleDateString('es-MX', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+  const capitalizedDateText = formattedDateText
+    ? formattedDateText.charAt(0).toUpperCase() + formattedDateText.slice(1)
+    : '';
 
   return (
     <main className="min-h-screen bg-black text-neutral-200 font-sans selection:bg-amber-500 selection:text-black pb-20">
       
-      {/* HERO SECTION */}
+      {/* HERO SECTION DINÁMICO */}
       <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
         <Image 
           src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070" 
@@ -40,26 +74,33 @@ export default async function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black"></div>
         <FadeIn direction="down">
           <div className="relative z-10 text-center px-4 space-y-6">
-            <h3 className="text-amber-500 tracking-[0.4em] uppercase text-xs font-bold font-mono">Nuestra Boda</h3>
-            <h1 className="text-7xl md:text-9xl font-serif text-white drop-shadow-2xl">M & X</h1>
-            <p className="text-xl italic text-neutral-400 mt-4 font-light">Nos casamos, y queremos que seas parte de nuestra historia.</p>
+            <h3 className="text-amber-500 tracking-[0.4em] uppercase text-xs font-bold font-mono">{heroInfo.subtitle}</h3>
+            <h1 className="text-7xl md:text-9xl font-serif text-white drop-shadow-2xl">{heroInfo.initials}</h1>
+            <p className="text-xl italic text-neutral-400 mt-4 font-light max-w-lg mx-auto">{heroInfo.description}</p>
           </div>
         </FadeIn>
       </section>
 
-      {/* CUENTA REGRESIVA */}
+      {/* CUENTA REGRESIVA Y FECHA TEXTUAL */}
       <section className="py-24 px-4 bg-black overflow-hidden relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 to-black pointer-events-none"></div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-6">
           <FadeIn>
-            <h2 className="text-3xl font-serif mb-8 text-white tracking-widest uppercase text-sm font-mono">El Gran Día</h2>
+            <h2 className="text-3xl font-serif text-white tracking-widest uppercase text-sm font-mono mb-2">El Gran Día</h2>
+            
+            {capitalizedDateText && (
+              <p className="text-amber-400 font-serif text-xl md:text-2xl italic mb-6">
+                {capitalizedDateText}
+              </p>
+            )}
+
             <Countdown targetDate={weddingDate} />
-            <CalendarButton />
+            <CalendarButton weddingDate={weddingDate} title={`Boda de ${heroInfo.initials}`} location={`${venueInfo.name}, ${venueInfo.location}`} />
           </FadeIn>
         </div>
       </section>
 
-      {/* ITINERARIO DINÁMICO */}
+      {/* ITINERARIO */}
       <section className="py-24 px-4 bg-neutral-950 overflow-hidden border-t border-white/5">
         <FadeIn>
           <div className="max-w-4xl mx-auto text-center mb-16">
@@ -70,14 +111,14 @@ export default async function Home() {
         </FadeIn>
       </section>
 
-      {/* DRESS CODE DINÁMICO */}
+      {/* DRESS CODE */}
       <section className="py-24 px-4 bg-black overflow-hidden border-t border-white/5">
         <FadeIn direction="up">
           <DressCode config={dressCode} />
         </FadeIn>
       </section>
 
-      {/* RECEPCIÓN Y MESA DE REGALOS DINÁMICA */}
+      {/* RECEPCIÓN Y MESA DE REGALOS */}
       <section className="py-24 px-4 bg-neutral-950 overflow-hidden border-t border-white/5 relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-96 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 relative z-10">
