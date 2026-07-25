@@ -42,7 +42,9 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
   const groupsInQueue = Array.from(new Set(unassigned.map(p => p.group_id)));
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-black">
+    <div className="flex flex-col md:flex-row h-full bg-black text-white">
+      
+      {/* FILA DE ASIGNACIÓN */}
       <div className="w-full md:w-80 bg-neutral-950 border-r border-white/5 flex flex-col h-[40vh] md:h-full z-30 shadow-2xl" onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, null)}>
         <div className="p-4 border-b border-white/5">
           <h2 className="text-amber-500 font-mono text-xs font-bold uppercase flex items-center gap-2"><Users size={16} /> Fila Asignación ({unassigned.length})</h2>
@@ -81,20 +83,22 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
         </div>
       </div>
 
-      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10 flex">
-        <div className="w-[1100px] h-[720px] bg-[#FAF7F2] border-2 border-[#8C6239]/30 rounded-2xl relative shadow-2xl flex-shrink-0 m-auto overflow-hidden">
-          
-          <div className="absolute top-4 left-4 z-[400] bg-white/90 backdrop-blur-md p-3 rounded-xl border border-[#8C6239]/20 shadow-lg text-[10px] font-mono space-y-2">
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-[#D4C4B7]" /> Mesa Libre</div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EAE0D5] border-2 border-[#8C6239]" /> Asignada (Incompleta)</div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#8C6239] border-2 border-[#4A3320]" /> Llena</div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-900" /> Sobrecupo</div>
-          </div>
+      {/* LIENZO DE MAPA CON LEYENDA SUPERIOR EXTERNA */}
+      <div className="flex-1 bg-[#050505] overflow-auto relative p-4 md:p-8 flex flex-col items-center">
+        
+        {/* LEYENDA FUERA DEL MAPA */}
+        <div className="mb-4 flex flex-wrap gap-4 items-center justify-center bg-neutral-900/90 px-6 py-2.5 rounded-full border border-white/10 text-xs font-mono shadow-xl">
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-neutral-900 border border-neutral-700" /> Libre</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500" /> Asignada</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500 border border-white" /> Llena</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-600 border border-white" /> Sobrecupo</div>
+        </div>
 
+        <div className="w-[1000px] h-[650px] bg-[#0d0d0d] border border-white/10 rounded-2xl relative shadow-2xl flex-shrink-0 my-auto overflow-hidden">
           {decorations.map(d => (
-            <div key={d.id} className="absolute border-2 border-[#8C6239]/40 bg-[#F5EFE6] rounded flex items-center justify-center pointer-events-none"
+            <div key={d.id} className="absolute border border-white/10 bg-neutral-900/90 rounded flex items-center justify-center pointer-events-none"
                  style={{ left: `${d.pos_x}%`, top: `${d.pos_y}%`, transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, width: `${d.width}%`, height: `${d.height}%`, zIndex: d.z_index || 10 }}>
-              <span className="text-xs font-serif font-bold text-[#6B4E31] text-center uppercase">{d.label}</span>
+              <span className="text-[10px] font-mono font-bold text-amber-200/90 text-center uppercase tracking-widest">{d.label}</span>
             </div>
           ))}
 
@@ -104,34 +108,34 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
             const isOver = occupants.length > t.capacity;
             const isPartial = occupants.length > 0 && occupants.length < t.capacity;
 
-            let bgColor = 'bg-white';
-            let borderColor = 'border-[#D4C4B7]';
-            let textColor = 'text-[#8C6239]';
+            let bgColor = 'bg-neutral-900';
+            let borderColor = 'border-neutral-700';
+            let textColor = 'text-neutral-400';
 
-            if (isOver) { bgColor = 'bg-red-600'; borderColor = 'border-red-900'; textColor = 'text-white'; }
-            else if (isFull) { bgColor = 'bg-[#8C6239]'; borderColor = 'border-[#4A3320]'; textColor = 'text-white'; }
-            else if (isPartial) { bgColor = 'bg-[#EAE0D5]'; borderColor = 'border-[#8C6239]'; textColor = 'text-[#6B4E31]'; }
+            if (isOver) { bgColor = 'bg-red-600'; borderColor = 'border-white'; textColor = 'text-white'; }
+            else if (isFull) { bgColor = 'bg-amber-500'; borderColor = 'border-white'; textColor = 'text-black'; }
+            else if (isPartial) { bgColor = 'bg-amber-500/20'; borderColor = 'border-amber-500'; textColor = 'text-amber-400'; }
 
             return (
               <div key={t.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, t.id)} onClick={() => setSelectedTable(selectedTable === t.id ? null : t.id)}
-                   className={`absolute w-[80px] h-[80px] border-4 rounded-full flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-110 ${bgColor} ${borderColor}`}
+                   className={`absolute w-14 h-14 border-2 rounded-full flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-110 ${bgColor} ${borderColor}`}
                    style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', zIndex: selectedTable === t.id ? 200 : 150 }}>
                 
-                <span className={`font-serif font-bold text-2xl pointer-events-none ${textColor}`}>{t.table_number}</span>
-                <span className={`text-[9px] font-mono font-bold pointer-events-none ${isFull || isOver ? 'text-white/80' : 'text-[#8C6239]/80'}`}>{occupants.length}/{t.capacity}</span>
+                <span className={`font-serif font-bold text-base pointer-events-none ${textColor}`}>{t.table_number}</span>
+                <span className={`text-[8px] font-mono font-bold pointer-events-none opacity-80 ${textColor}`}>{occupants.length}/{t.capacity}</span>
 
                 {selectedTable === t.id && (
-                  <div className="absolute top-full mt-3 w-48 md:w-64 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[300] cursor-default" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-full mt-3 w-48 md:w-64 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[300] cursor-default text-left" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
                       <p className="text-xs text-amber-500 font-mono font-bold">MESA {t.table_number}</p>
                       <button onClick={() => setSelectedTable(null)} className="text-neutral-500 hover:text-white"><X size={14} /></button>
                     </div>
                     {occupants.length === 0 ? <p className="text-xs text-neutral-500 italic text-center">Mesa vacía</p> : (
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700">
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
                         {occupants.map(o => (
                           <div key={o.id} className="flex justify-between items-center bg-black/50 p-2 rounded border border-white/5">
-                            <span className="text-[10px] md:text-xs text-white truncate max-w-[120px] md:max-w-[160px] font-medium">{o.name}</span>
-                            <button onClick={() => unassignPerson(o.id, o.type)} className="text-neutral-500 hover:text-red-500 p-1.5"><UserMinus size={14} /></button>
+                            <span className="text-[10px] md:text-xs text-white truncate max-w-[120px] font-medium">{o.name}</span>
+                            <button onClick={() => unassignPerson(o.id, o.type)} className="text-neutral-500 hover:text-red-500 p-1"><UserMinus size={14} /></button>
                           </div>
                         ))}
                       </div>

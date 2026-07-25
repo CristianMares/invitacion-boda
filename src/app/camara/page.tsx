@@ -12,7 +12,6 @@ const FILTERS = [
 
 export default function HybridCameraFlow() {
   const [view, setView] = useState<'menu' | 'retro_cam' | 'preview' | 'success'>('menu');
-  const [shotsLeft, setShotsLeft] = useState(24);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [guestMessage, setGuestMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -26,12 +25,10 @@ export default function HybridCameraFlow() {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
@@ -56,24 +53,23 @@ export default function HybridCameraFlow() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Error de servidor');
       
-      setShotsLeft(prev => prev - 1);
       setView('success');
       setTimeout(() => {
         setView('menu');
         setCapturedImage(null);
         setGuestMessage('');
-      }, 2500);
+      }, 3000);
 
-    } catch (error) {
-      alert("Error en la transmisión de datos. Intenta nuevamente.");
+    } catch {
+      alert("Error al enviar fotografía.");
     } finally {
       setIsUploading(false);
     }
   };
 
-  const processFile = (e: React.ChangeEvent<HTMLInputElement>, source: string) => {
+  const processFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || shotsLeft <= 0) return;
+    if (!file) return;
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
@@ -88,17 +84,8 @@ export default function HybridCameraFlow() {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white text-center animate-in zoom-in duration-300">
         <CheckCircle2 size={72} className="text-emerald-400 mb-4 animate-bounce" />
-        <h1 className="text-3xl font-serif">¡Foto Publicada!</h1>
-        <p className="text-neutral-400 text-sm mt-2 font-mono">Tu recuerdo se ha subido al muro de la boda.</p>
-      </div>
-    );
-  }
-
-  if (shotsLeft <= 0) {
-    return (
-      <div className="fixed inset-0 bg-neutral-950 text-amber-500 flex flex-col items-center justify-center p-6 text-center z-50">
-        <h1 className="font-serif text-5xl mb-4 italic tracking-widest">Fin.</h1>
-        <p className="text-neutral-400 font-light max-w-sm">El carrete está lleno. Las memorias se publicarán pronto.</p>
+        <h1 className="text-3xl font-serif">¡Foto Enviada!</h1>
+        <p className="text-neutral-400 text-sm mt-2 font-mono max-w-xs">Estará en la galería en cuanto los novios la aprueben.</p>
       </div>
     );
   }
@@ -128,7 +115,7 @@ export default function HybridCameraFlow() {
           <div className="flex gap-3">
             <button onClick={() => setView('menu')} disabled={isUploading} className="flex-1 bg-neutral-800 hover:bg-neutral-700 py-3 rounded-xl font-bold text-xs uppercase tracking-wider">Cancelar</button>
             <button onClick={() => capturedImage && uploadToBackend(capturedImage, 'upload', guestMessage)} disabled={isUploading} className="flex-1 bg-amber-600 hover:bg-amber-500 text-black py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-              {isUploading ? 'Publicando...' : <><Send size={14} /> Publicar</>}
+              {isUploading ? 'Enviando...' : <><Send size={14} /> Publicar</>}
             </button>
           </div>
         </div>
@@ -138,48 +125,43 @@ export default function HybridCameraFlow() {
 
   if (view === 'menu') {
     return (
-      <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-serif text-neutral-200 italic mb-2">Libro de Firmas</h1>
-            <p className="text-neutral-500 text-sm">Captura un momento y déjanos un mensaje</p>
-            <div className="mt-4 inline-block bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-full">
-              <span className="text-red-500 font-mono">{shotsLeft}</span>
-              <span className="text-neutral-500 text-xs ml-2 uppercase">Fotos restantes</span>
-            </div>
+            <p className="text-neutral-500 text-sm">Captura un momento y déjanos una dedicatoria</p>
           </div>
 
-          {/* RECOMENDACIÓN DE USO DE GALERÍA */}
-          <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl text-xs text-amber-200/90 leading-relaxed text-center">
-            💡 <strong>Recomendación:</strong> Toma tu foto o video con la cámara nativa de tu teléfono y súbela desde la <strong>Galería</strong> para aprovechar el máximo enfoque y resolución de tu dispositivo.
+          <div className="bg-neutral-900/80 border border-white/10 p-4 rounded-2xl text-xs text-neutral-300 leading-relaxed text-center font-sans">
+            💡 <strong>Sugerencia:</strong> Usa la cámara nativa de tu teléfono y sube la foto desde tu <strong>Galería</strong> para la máxima resolución.
           </div>
 
-          <button onClick={() => setView('retro_cam')} className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-neutral-800 p-6 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
-            <div className="bg-amber-500/10 p-4 rounded-full text-amber-500"><Camera size={32} /></div>
+          <button onClick={() => setView('retro_cam')} className="w-full bg-[#171717] hover:bg-[#222] border border-white/10 p-6 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
+            <div className="bg-amber-500/10 p-4 rounded-full text-amber-500 border border-amber-500/20"><Camera size={32} /></div>
             <div className="text-left">
               <h3 className="text-white font-bold">Cámara Web Retro</h3>
-              <p className="text-neutral-500 text-sm">Filtros en vivo en navegador.</p>
+              <p className="text-neutral-500 text-sm">Captura instantánea con filtros.</p>
             </div>
           </button>
 
-          <button onClick={() => fileInputRef.current?.click()} className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-neutral-800 p-6 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
-            <div className="bg-blue-500/10 p-4 rounded-full text-blue-500"><ImagePlus size={32} /></div>
+          <button onClick={() => fileInputRef.current?.click()} className="w-full bg-[#171717] hover:bg-[#222] border border-white/10 p-6 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
+            <div className="bg-amber-500/10 p-4 rounded-full text-amber-500 border border-amber-500/20"><ImagePlus size={32} /></div>
             <div className="text-left">
-              <h3 className="text-white font-bold">Subir de Galería (Recomendado)</h3>
-              <p className="text-neutral-500 text-sm">Sube fotos o videos en alta calidad.</p>
+              <h3 className="text-white font-bold">Subir de Galería</h3>
+              <p className="text-neutral-500 text-sm">Sube fotografías de tu carrete.</p>
             </div>
           </button>
 
-          <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={(e) => processFile(e, 'upload')} />
+          <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={processFile} />
         </div>
       </div>
     );
   }
 
-  return <RetroCamUI shotsLeft={shotsLeft} setShotsLeft={setShotsLeft} goBack={() => setView('menu')} uploadToBackend={uploadToBackend} isUploading={isUploading} />;
+  return <RetroCamUI goBack={() => setView('menu')} uploadToBackend={uploadToBackend} isUploading={isUploading} />;
 }
 
-function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend, isUploading }: any) {
+function RetroCamUI({ goBack, uploadToBackend, isUploading }: any) {
   const webcamRef = useRef<Webcam>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [filterIdx, setFilterIdx] = useState(0);
@@ -195,7 +177,7 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend, isUpload
   const toggleFlash = () => setFlashOn(prev => !prev);
 
   const capturePhoto = useCallback(async () => {
-    if (shotsLeft <= 0 || !cameraReady) return;
+    if (!cameraReady) return;
     if (flashOn) {
       setScreenFlash(true);
       await new Promise(res => setTimeout(res, 150));
@@ -207,7 +189,7 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend, isUpload
       setTempImage(imageSrc);
       setMsgModal(true);
     }
-  }, [webcamRef, flashOn, shotsLeft, cameraReady]);
+  }, [webcamRef, flashOn, cameraReady]);
 
   if (msgModal) {
     return (
@@ -225,7 +207,7 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend, isUpload
             <input 
               type="text" 
               maxLength={80}
-              placeholder="Ej. ¡Los queremos mucho! - Los Gómez" 
+              placeholder="Ej. ¡Muchas felicidades! - Familia Gómez" 
               value={guestMessage}
               onChange={(e) => setGuestMessage(e.target.value)}
               className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-sm text-white outline-none focus:border-amber-500"
@@ -234,7 +216,7 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend, isUpload
           <div className="flex gap-3">
             <button onClick={() => setMsgModal(false)} disabled={isUploading} className="flex-1 bg-neutral-800 hover:bg-neutral-700 py-3 rounded-xl font-bold text-xs uppercase tracking-wider">Repetir Foto</button>
             <button onClick={() => tempImage && uploadToBackend(tempImage, 'webcam', guestMessage)} disabled={isUploading} className="flex-1 bg-amber-600 hover:bg-amber-500 text-black py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-              {isUploading ? 'Publicando...' : <><Send size={14} /> Publicar</>}
+              {isUploading ? 'Enviando...' : <><Send size={14} /> Publicar</>}
             </button>
           </div>
         </div>
@@ -251,14 +233,12 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend, isUpload
         <div className="absolute inset-x-0 bottom-6 flex justify-center z-50 pointer-events-none"><span className="bg-black/60 backdrop-blur px-3 py-1 rounded text-amber-400 text-xs uppercase tracking-widest border border-white/10">{FILTERS[filterIdx].name}</span></div>
         <Webcam ref={webcamRef} audio={false} screenshotFormat="image/jpeg" videoConstraints={{ facingMode }} onUserMedia={() => setCameraReady(true)} className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${FILTERS[filterIdx].css}`} />
       </div>
-      <div className="h-40 bg-[#151515] border-t-8 border-[#0a0a0a] shadow-[inset_0_2px_4px_rgba(255,255,255,0.05)] flex items-center justify-around px-4 relative z-40">
-        <button onClick={toggleFilter} className="w-14 h-14 bg-gradient-to-br from-[#2a2a2a] to-[#111] rounded-full flex items-center justify-center border border-[#333] text-neutral-400 hover:text-white transition-all active:scale-95"><Paintbrush size={20} /></button>
-        <div className="relative">
-          <button onClick={capturePhoto} disabled={!cameraReady || isUploading} className="relative w-20 h-20 bg-gradient-to-b from-[#e5e5e5] to-[#a3a3a3] rounded-full flex items-center justify-center active:translate-y-[2px] transition-all disabled:opacity-50">
-            <div className="w-16 h-16 bg-gradient-to-b from-[#f5f5f5] to-[#d4d4d4] rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,0.1)]"></div>
-          </button>
-        </div>
-        <button onClick={toggleCamera} className="w-14 h-14 bg-gradient-to-br from-[#2a2a2a] to-[#111] rounded-full flex items-center justify-center border border-[#333] text-neutral-400 hover:text-white transition-all active:scale-95"><SwitchCamera size={20} /></button>
+      <div className="h-36 bg-[#151515] border-t border-white/10 flex items-center justify-around px-4 relative z-40">
+        <button onClick={toggleFilter} className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:text-white transition-all active:scale-95"><Paintbrush size={18} /></button>
+        <button onClick={capturePhoto} disabled={!cameraReady || isUploading} className="w-20 h-20 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all disabled:opacity-50">
+          <div className="w-16 h-16 bg-black rounded-full border-2 border-amber-300" />
+        </button>
+        <button onClick={toggleCamera} className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:text-white transition-all active:scale-95"><SwitchCamera size={18} /></button>
       </div>
     </div>
   );
