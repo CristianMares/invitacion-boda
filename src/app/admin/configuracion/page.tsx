@@ -24,12 +24,6 @@ export default function AdminConfiguracion() {
   const [whatsappInfo, setWhatsappInfo] = useState({
     template: '¡Hola {nombre}! Tu pase para la boda de {iniciales} está listo. Consulta tu código QR y mesa asignada aquí: {link}'
   });
-  const [whatsappApi, setWhatsappApi] = useState({
-    provider_url: '',
-    api_token: '',
-    instance_id: '',
-    enabled: false
-  });
   const [testPhone, setTestPhone] = useState('');
 
   useEffect(() => {
@@ -42,7 +36,6 @@ export default function AdminConfiguracion() {
         if (data.config.gift_registry) setGiftRegistry(data.config.gift_registry);
         if (data.config.itinerary) setItinerary(data.config.itinerary);
         if (data.config.whatsapp_info) setWhatsappInfo(data.config.whatsapp_info);
-        if (data.config.whatsapp_api_config) setWhatsappApi(data.config.whatsapp_api_config);
       }
       setLoading(false);
     });
@@ -107,7 +100,6 @@ export default function AdminConfiguracion() {
     window.open(url, '_blank');
   };
 
-  // Formato para previsualización de fecha en texto
   const dateObj = new Date(weddingDate);
   const formattedDateText = isNaN(dateObj.getTime())
     ? ''
@@ -133,7 +125,7 @@ export default function AdminConfiguracion() {
         <div className="flex items-center justify-between border-b border-white/5 pb-6">
           <div>
             <h1 className="text-3xl font-serif text-white tracking-wide">Configuración del Sitio</h1>
-            <p className="text-neutral-500 text-xs mt-1 font-mono">Gestión dinámica de textos, fechas, itinerario, regalos y WhatsApp.</p>
+            <p className="text-neutral-500 text-xs mt-1 font-mono">Gestión dinámica de textos, fechas, itinerario, regalos y mensajes.</p>
           </div>
           <div className="bg-neutral-900 px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
             <ShieldCheck className="text-amber-500" size={16} />
@@ -141,7 +133,7 @@ export default function AdminConfiguracion() {
           </div>
         </div>
 
-        {/* 1. MONOGRAMA Y ENCABEZADO HERO */}
+        {/* 1. MONOGRAMA Y ENCABEZADO */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Type size={18} /> Monograma y Encabezado</h3>
@@ -170,7 +162,7 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 2. PLANTILLA MENSAJE DE WHATSAPP */}
+        {/* 2. PLANTILLA WHATSAPP */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><MessageSquare size={18} /> Plantilla de Mensaje WhatsApp</h3>
@@ -180,7 +172,7 @@ export default function AdminConfiguracion() {
           </div>
           <div>
             <label className="text-xs font-mono text-neutral-400 block mb-1">
-              Plantilla (Variables: <code className="text-amber-400">{'{nombre}'}</code>, <code className="text-amber-400">{'{iniciales}'}</code>, <code className="text-amber-400">{'{link}'}</code>):
+              Plantilla (Variables automáticas: <code className="text-amber-400">{'{nombre}'}</code>, <code className="text-amber-400">{'{iniciales}'}</code>, <code className="text-amber-400">{'{link}'}</code>):
             </label>
             <textarea 
               rows={3} 
@@ -207,48 +199,6 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* GATEWAY DE WHATSAPP (SERVIDOR) */}
-        <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
-          <div className="flex items-center justify-between border-b border-white/5 pb-3">
-            <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2">Gateway Envío Automático (Servidor)</h3>
-            <button onClick={() => saveConfigSection('whatsapp_api_config', whatsappApi)} disabled={savingKey === 'whatsapp_api_config'} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl text-xs flex items-center gap-1.5">
-              <Save size={14} /> Guardar
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3 bg-black/60 p-3 rounded-xl border border-white/5">
-            <input 
-              type="checkbox" 
-              id="enable_api" 
-              checked={whatsappApi.enabled} 
-              onChange={(e) => setWhatsappApi({ ...whatsappApi, enabled: e.target.checked })} 
-              className="w-4 h-4 accent-amber-500 rounded" 
-            />
-            <label htmlFor="enable_api" className="text-xs font-mono text-neutral-300 cursor-pointer">
-              Activar envío automático en segundo plano (Requiere API de pago/Gateway)
-            </label>
-          </div>
-
-          {whatsappApi.enabled && (
-            <div className="space-y-3 pt-2">
-              <div>
-                <label className="text-[10px] font-mono text-neutral-500 block mb-1">URL Endpoint del Proveedor:</label>
-                <input type="text" placeholder="https://api.ultramsg.com/instanceXXXX/messages/chat" value={whatsappApi.provider_url} onChange={(e) => setWhatsappApi({ ...whatsappApi, provider_url: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" />
-              </div>
-              <div className="grid md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-mono text-neutral-500 block mb-1">API Token / Key:</label>
-                  <input type="password" value={whatsappApi.api_token} onChange={(e) => setWhatsappApi({ ...whatsappApi, api_token: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-mono text-neutral-500 block mb-1">Instance ID:</label>
-                  <input type="text" value={whatsappApi.instance_id} onChange={(e) => setWhatsappApi({ ...whatsappApi, instance_id: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" />
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
         {/* 3. FECHA Y CUENTA REGRESIVA */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -268,7 +218,7 @@ export default function AdminConfiguracion() {
           </div>
         </section>
 
-        {/* 4. DRESS CODE Y PALETA DE COLORES */}
+        {/* 4. DRESS CODE */}
         <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2"><Shirt size={18} /> Código de Vestimenta</h3>
@@ -445,7 +395,7 @@ export default function AdminConfiguracion() {
 
       </div>
 
-      {/* MODAL DE PREVISUALIZACIÓN VISTA REAL COMPLETA */}
+      {/* MODAL PREVISUALIZACIÓN */}
       {activePreviewModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[999] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-neutral-950 border border-white/10 rounded-3xl p-6 md:p-8 max-w-2xl w-full relative shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
