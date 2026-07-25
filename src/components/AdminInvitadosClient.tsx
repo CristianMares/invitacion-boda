@@ -11,7 +11,6 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
 
   const filterBySearchAndWa = (list: any[]) => {
     return list.filter(g => {
-      // Filtro de búsqueda textual
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = !term || (
         g.full_name.toLowerCase().includes(term) ||
@@ -19,7 +18,6 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
         g.companions.some((c: any) => c.name.toLowerCase().includes(term))
       );
 
-      // Filtro de estado de WhatsApp
       let matchesWa = true;
       if (waFilter === 'pending') matchesWa = !g.sent_wa;
       if (waFilter === 'sent') matchesWa = g.sent_wa;
@@ -28,7 +26,6 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
     });
   };
 
-  // Listas filtradas por pestaña
   const pendingList = filterBySearchAndWa(guests.filter((g: any) => g.status === 'pending'));
   const approvedList = filterBySearchAndWa(guests.filter((g: any) => g.status === 'approved' && !g.has_entered));
   const enteredList = filterBySearchAndWa(guests.filter((g: any) => g.has_entered));
@@ -78,11 +75,16 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
     });
   };
 
+  const openDirectChat = (phoneToUse: string) => {
+    const waUrl = `https://wa.me/521${phoneToUse}`;
+    window.open(waUrl, '_blank');
+  };
+
   return (
     <div className="h-full bg-black text-white p-4 md:p-10 font-sans overflow-y-auto selection:bg-amber-500 selection:text-black">
       <div className="max-w-5xl mx-auto pb-24 space-y-8">
         
-        {/* HEADER */}
+        {/* ENCABEZADO */}
         <div className="flex items-center justify-between border-b border-white/5 pb-6 pt-12 md:pt-0">
           <div>
             <h1 className="text-3xl font-serif text-white tracking-wide">Validación de Registros</h1>
@@ -94,7 +96,7 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
           </div>
         </div>
 
-        {/* BUSCADOR Y SELECTOR DE ESTADO DE WHATSAPP */}
+        {/* BUSCADOR Y FILTROS */}
         <div className="grid md:grid-cols-3 gap-3">
           <div className="md:col-span-2 relative">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
@@ -126,13 +128,13 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
           </div>
         </div>
 
-        {/* PESTAÑAS CON PARPADEO NEÓN INTENSO */}
+        {/* PESTAÑAS CON DESTELLO ELEGANTE */}
         <div className="flex border-b border-white/5 gap-2 overflow-x-auto">
           <button 
             onClick={() => setActiveTab('pending')} 
             className={`px-5 py-3 text-xs font-mono font-bold uppercase tracking-wider rounded-t-xl transition-all border-t border-x ${
               activeTab === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-transparent text-neutral-500 border-transparent'
-            } ${searchTerm && counts.pending > 0 && activeTab !== 'pending' ? 'animate-pulse text-black font-bold bg-amber-400 border-white shadow-[0_0_20px_rgba(245,158,11,0.8)]' : ''}`}
+            } ${searchTerm && counts.pending > 0 && activeTab !== 'pending' ? 'animate-pulse text-amber-400 border-amber-500/60 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.3)]' : ''}`}
           >
             Pendientes ({counts.pending})
           </button>
@@ -141,7 +143,7 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
             onClick={() => setActiveTab('approved')} 
             className={`px-5 py-3 text-xs font-mono font-bold uppercase tracking-wider rounded-t-xl transition-all border-t border-x ${
               activeTab === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-transparent text-neutral-500 border-transparent'
-            } ${searchTerm && counts.approved > 0 && activeTab !== 'approved' ? 'animate-pulse text-black font-bold bg-amber-400 border-white shadow-[0_0_20px_rgba(245,158,11,0.8)]' : ''}`}
+            } ${searchTerm && counts.approved > 0 && activeTab !== 'approved' ? 'animate-pulse text-amber-400 border-amber-500/60 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.3)]' : ''}`}
           >
             Aprobados ({counts.approved})
           </button>
@@ -150,7 +152,7 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
             onClick={() => setActiveTab('entered')} 
             className={`px-5 py-3 text-xs font-mono font-bold uppercase tracking-wider rounded-t-xl transition-all border-t border-x ${
               activeTab === 'entered' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-transparent text-neutral-500 border-transparent'
-            } ${searchTerm && counts.entered > 0 && activeTab !== 'entered' ? 'animate-pulse text-black font-bold bg-amber-400 border-white shadow-[0_0_20px_rgba(245,158,11,0.8)]' : ''}`}
+            } ${searchTerm && counts.entered > 0 && activeTab !== 'entered' ? 'animate-pulse text-amber-400 border-amber-500/60 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.3)]' : ''}`}
           >
             En Salón ({counts.entered})
           </button>
@@ -159,18 +161,18 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
             onClick={() => setActiveTab('rejected')} 
             className={`px-5 py-3 text-xs font-mono font-bold uppercase tracking-wider rounded-t-xl transition-all border-t border-x ${
               activeTab === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-transparent text-neutral-500 border-transparent'
-            } ${searchTerm && counts.rejected > 0 && activeTab !== 'rejected' ? 'animate-pulse text-black font-bold bg-amber-400 border-white shadow-[0_0_20px_rgba(245,158,11,0.8)]' : ''}`}
+            } ${searchTerm && counts.rejected > 0 && activeTab !== 'rejected' ? 'animate-pulse text-amber-400 border-amber-500/60 bg-amber-500/10 shadow-[0_0_12px_rgba(245,158,11,0.3)]' : ''}`}
           >
             Rechazados ({counts.rejected})
           </button>
         </div>
 
-        {/* LISTADO FILTRADO */}
+        {/* LISTA DE REGISTROS */}
         <div className="grid gap-4">
           {getActiveList().length === 0 && (
             <div className="text-center py-16 bg-neutral-900/10 rounded-3xl border border-dashed border-neutral-800 space-y-2">
               <AlertCircle className="text-neutral-600 mx-auto" size={28} />
-              <p className="text-neutral-500 text-xs font-mono">Sin registros que coincidan con los filtros.</p>
+              <p className="text-neutral-500 text-xs font-mono">Sin registros en esta vista.</p>
             </div>
           )}
 
@@ -198,7 +200,7 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
                     </div>
                   </div>
 
-                  {/* BOTÓN DE WHATSAPP DINÁMICO */}
+                  {/* CONTROLES DE ACCIÓN */}
                   <div className="flex items-center gap-2 self-end sm:self-center">
                     {activeTab === 'pending' && (
                       <>
@@ -211,7 +213,7 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
                       </>
                     )}
 
-                    {activeTab === 'approved' && (
+                    {(activeTab === 'approved' || activeTab === 'entered') && (
                       <>
                         <button 
                           onClick={() => markWhatsAppSent(guest.id, targetPhone)} 
@@ -225,26 +227,29 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
                           {hasOverride ? `Enviar a +521${targetPhone}` : guest.sent_wa ? 'Reenviar WA' : 'Enviar WA'}
                         </button>
 
-                        <button onClick={() => updateStatus(guest.id, 'rejected')} className="flex items-center gap-2 bg-neutral-900 border border-red-500/20 hover:bg-red-950/40 text-red-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">
-                          <X size={14} /> Revocar
-                        </button>
+                        {activeTab === 'approved' && (
+                          <button onClick={() => updateStatus(guest.id, 'rejected')} className="flex items-center gap-2 bg-neutral-900 border border-red-500/20 hover:bg-red-950/40 text-red-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">
+                            <X size={14} /> Revocar
+                          </button>
+                        )}
                       </>
                     )}
 
-                    {activeTab === 'entered' && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-xl text-blue-400 text-xs font-mono font-bold">
-                        ✓ Ingresó al Salón
-                      </div>
-                    )}
-
                     {activeTab === 'rejected' && (
-                      <button onClick={() => updateStatus(guest.id, 'approved')} className="flex items-center gap-2 bg-neutral-900 border border-emerald-500/20 hover:bg-emerald-950/40 text-emerald-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">
-                        <Check size={14} /> Re-Aprobar
-                      </button>
+                      <>
+                        <button onClick={() => openDirectChat(targetPhone)} className="flex items-center gap-2 bg-neutral-900 border border-white/10 hover:border-amber-500/50 text-neutral-300 hover:text-amber-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">
+                          <MessageCircle size={14} /> Abrir Chat
+                        </button>
+
+                        <button onClick={() => updateStatus(guest.id, 'approved')} className="flex items-center gap-2 bg-neutral-900 border border-emerald-500/20 hover:bg-emerald-950/40 text-emerald-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">
+                          <Check size={14} /> Re-Aprobar
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
 
+                {/* ACOMPAÑANTES */}
                 {guest.companions.length > 0 && (
                   <div className="pt-2 flex flex-wrap gap-1.5 border-t border-white/5">
                     {guest.companions.map((c: any, i: number) => (
@@ -255,9 +260,10 @@ export default function AdminInvitadosClient({ initialGuests, heroInitials, waTe
                   </div>
                 )}
 
-                {activeTab === 'approved' && (
+                {/* REENVÍO A OTRO NÚMERO (EN APROBADOS, EN SALÓN Y RECHAZADOS) */}
+                {(activeTab === 'approved' || activeTab === 'entered' || activeTab === 'rejected') && (
                   <div className="pt-2 flex items-center gap-2 border-t border-white/5">
-                    <span className="text-[10px] font-mono text-neutral-500">¿Reenviar a otro número?:</span>
+                    <span className="text-[10px] font-mono text-neutral-500">¿Enviar/Chat a otro número?:</span>
                     <input 
                       type="tel" 
                       placeholder="Número (10 dígitos)" 
