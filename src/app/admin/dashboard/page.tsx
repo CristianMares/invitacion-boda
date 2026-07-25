@@ -1,5 +1,4 @@
 import { neon } from '@neondatabase/serverless';
-import { Users, UserCheck, ShieldCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +14,7 @@ export default async function AdminDashboard() {
   `;
 
   const tables = await sql`SELECT * FROM tables`;
-  const decorations = await sql`SELECT * FROM decorations`;
+  const decorations = await sql`SELECT * FROM decorations ORDER BY COALESCE(z_index, 10) ASC`;
 
   const guestsOccupancy = await sql`SELECT table_id, COUNT(*) as cnt FROM guests WHERE table_id IS NOT NULL GROUP BY table_id`;
   const companionsOccupancy = await sql`SELECT table_id, COUNT(*) as cnt FROM companions WHERE table_id IS NOT NULL GROUP BY table_id`;
@@ -58,9 +57,15 @@ export default async function AdminDashboard() {
 
         <div className="w-full aspect-[16/10] max-w-5xl mx-auto bg-neutral-950 border-2 border-neutral-900 rounded-3xl relative shadow-2xl overflow-hidden mt-8">
           {decorations.map(d => (
-            <div key={d.id} className="absolute bg-[#111] border-2 border-neutral-800/50 rounded-lg flex items-center justify-center"
-                 style={{ left: `${d.pos_x}%`, top: `${d.pos_y}%`, transform: 'translate(-50%, -50%)', width: `${d.width}%`, height: `${d.height}%` }}>
-              <span className="text-[10px] md:text-xs font-mono font-bold text-neutral-600 uppercase text-center">{d.label}</span>
+            <div key={d.id} className="absolute border border-black/20 flex items-center justify-center"
+                 style={{ 
+                   left: `${d.pos_x}%`, top: `${d.pos_y}%`, 
+                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, 
+                   width: `${d.width}%`, height: `${d.height}%`,
+                   backgroundColor: d.bg_color || '#D4C4B7',
+                   zIndex: d.z_index || 10
+                 }}>
+              <span className="text-[10px] md:text-xs font-mono font-bold text-neutral-800 uppercase text-center">{d.label}</span>
             </div>
           ))}
 
@@ -68,7 +73,7 @@ export default async function AdminDashboard() {
             const occupants = occupancyMap[t.id] || 0;
             const isOccupied = occupants > 0;
             return (
-              <div key={t.id} className="absolute w-12 h-12 md:w-16 md:h-16 border-2 rounded-full flex flex-col items-center justify-center shadow-lg"
+              <div key={t.id} className="absolute w-12 h-12 md:w-16 md:h-16 border-2 rounded-full flex flex-col items-center justify-center shadow-lg z-[200]"
                    style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', backgroundColor: isOccupied ? `rgba(245,158,11,${Math.min(occupants * 0.1, 0.8)})` : '#171717', borderColor: isOccupied ? '#f59e0b' : '#333' }}>
                 <span className="text-white font-serif font-bold text-sm md:text-lg">{t.table_number}</span>
                 <span className="text-[8px] md:text-[10px] font-mono font-bold text-neutral-400">{occupants}/{t.capacity}</span>

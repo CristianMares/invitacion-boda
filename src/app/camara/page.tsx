@@ -1,7 +1,7 @@
 ﻿'use client';
 import { useRef, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, ImagePlus, Paintbrush, Send, MessageSquareText } from 'lucide-react';
+import { Camera, ImagePlus, Paintbrush, Send, MessageSquareText, Zap } from 'lucide-react';
 
 const FILTERS = [
   { id: 'normal', name: 'Original', css: '' },
@@ -18,21 +18,48 @@ export default function HybridCameraFlow() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Compresión automática de imágenes pesadas enviadas desde el celular
+  const resizeImage = (dataUrl: string, maxWidth = 1200): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => resolve(dataUrl);
+    });
+  };
+
   const uploadToBackend = async (dataUri: string, source: string, msg: string) => {
     setIsUploading(true);
     try {
+      const optimizedUri = await resizeImage(dataUri);
       const res = await fetch('/api/upload', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUri, source, filter: 'normal', guestMessage: msg }),
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: optimizedUri, source, filter: 'normal', guestMessage: msg }),
       });
       const data = await res.json();
-      if (!data.success) throw new Error('Error de servidor');
+      if (!data.success) throw new Error(data.error || 'Error de servidor');
       setShotsLeft(prev => prev - 1);
       setView('menu');
       setCapturedImage(null);
       setGuestMessage('');
     } catch (error) {
-      alert("Error en la transmisión de datos.");
+      alert("Error en la transmisión de datos. Intenta nuevamente.");
     } finally {
       setIsUploading(false);
     }
@@ -122,7 +149,7 @@ export default function HybridCameraFlow() {
             </div>
           </button>
 
-          <input type="file" accept="image/*,video/*" ref={fileInputRef} className="hidden" onChange={(e) => processFile(e, 'upload')} />
+          <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={(e) => processFile(e, 'upload')} />
         </div>
       </div>
     );
@@ -212,7 +239,7 @@ function RetroCamUI({ shotsLeft, setShotsLeft, goBack, uploadToBackend }: any) {
             <div className="w-16 h-16 bg-gradient-to-b from-[#f5f5f5] to-[#d4d4d4] rounded-full shadow-[inset_0_2px_5px_rgba(0,0,0,0.1)]"></div>
           </button>
         </div>
-        <button onClick={toggleCamera} className="w-14 h-14 bg-gradient-to-br from-[#2a2a2a] to-[#111] rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-[#333] text-neutral-400 hover:text-white transition-all active:scale-95 z-10"><SwitchCamera size={20} /></button>
+        <button onClick={toggleCamera} className="w-14 h-14 bg-gradient-to-br from-[#2a2a2a] to-[#111] rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-[#333] text-neutral-400 hover:text-white transition-all active:scale-95 z-10"><Send size={20} /></button>
       </div>
     </div>
   );

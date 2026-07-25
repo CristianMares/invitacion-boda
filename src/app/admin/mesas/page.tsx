@@ -8,7 +8,7 @@ export default async function AdminMesas() {
   const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
   
   const tables = await sql`SELECT * FROM tables ORDER BY table_number ASC`;
-  const decorations = await sql`SELECT * FROM decorations`;
+  const decorations = await sql`SELECT * FROM decorations ORDER BY COALESCE(z_index, 10) ASC`;
 
   const guests = await sql`
     SELECT id, full_name as name, 'guest' as type, table_id, id as group_id 
@@ -17,7 +17,12 @@ export default async function AdminMesas() {
   `;
 
   const companions = await sql`
-    SELECT c.id, c.full_name as name, 'companion' as type, c.table_id, c.guest_id as group_id
+    SELECT 
+      c.id, 
+      CONCAT(c.full_name, ' (Inv: ', g.full_name, ')') as name, 
+      'companion' as type, 
+      c.table_id, 
+      c.guest_id as group_id
     FROM companions c
     JOIN guests g ON c.guest_id = g.id
     WHERE g.status IN ('approved', 'confirmed')
