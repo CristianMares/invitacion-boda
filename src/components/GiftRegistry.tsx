@@ -65,7 +65,7 @@ export default function GiftRegistry() {
               <p className="text-[10px] uppercase tracking-widest font-mono text-neutral-500 text-left">Listas de Deseos</p>
               <div className="grid grid-cols-2 gap-2">
                 <a 
-                  href="https://www.amazon.com.mx" 
+                  href="https://www.amazon.com.mx/hz/wishlist/ls/1LNHKM518XGU3?ref_=wl_share" 
                   target="_blank" 
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
