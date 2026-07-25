@@ -1,10 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { Users, ChevronDown, UserMinus, User, GripVertical, X } from 'lucide-react';
+import { Users, ChevronDown, UserMinus, GripVertical, X } from 'lucide-react';
 
 interface Person { id: string; name: string; type: 'guest' | 'companion'; table_id: string | null; group_id: string; }
 interface Table { id: string; table_number: number; pos_x: number; pos_y: number; capacity: number; }
-interface Decoration { id: string; label: string; pos_x: number; pos_y: number; width: number; height: number; }
+interface Decoration { id: string; label: string; pos_x: number; pos_y: number; width: number; height: number; rotation?: number; z_index?: number; }
 
 export default function SeatingPlanUI({ initialPeople, tables, decorations }: { initialPeople: Person[], tables: Table[], decorations: Decoration[] }) {
   const [people, setPeople] = useState<Person[]>(initialPeople);
@@ -42,12 +42,12 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
   const groupsInQueue = Array.from(new Set(unassigned.map(p => p.group_id)));
 
   return (
-    <div className="flex flex-col md:flex-row h-full">
+    <div className="flex flex-col md:flex-row h-full bg-black">
       <div className="w-full md:w-80 bg-neutral-950 border-r border-white/5 flex flex-col h-[40vh] md:h-full z-30 shadow-2xl" onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, null)}>
         <div className="p-4 border-b border-white/5">
           <h2 className="text-amber-500 font-mono text-xs font-bold uppercase flex items-center gap-2"><Users size={16} /> Fila Asignación ({unassigned.length})</h2>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-neutral-800">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {groupsInQueue.map(groupId => {
             const members = unassigned.filter(p => p.group_id === groupId);
             const titular = members.find(m => m.type === 'guest') || people.find(p => p.id === groupId);
@@ -81,39 +81,47 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
         </div>
       </div>
 
-      {/* LIENZO SCROLLABLE */}
-      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10">
-        <div className="w-[1200px] h-[800px] bg-[#F3CBAF] border-2 border-neutral-900 rounded-lg relative shadow-2xl mx-auto">
-          <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
+      <div className="flex-1 bg-[#0a0a0a] overflow-auto relative p-4 md:p-10 flex">
+        <div className="w-[1100px] h-[720px] bg-[#FAF7F2] border-2 border-[#8C6239]/30 rounded-2xl relative shadow-2xl flex-shrink-0 m-auto overflow-hidden">
           
+          <div className="absolute top-4 left-4 z-[400] bg-white/90 backdrop-blur-md p-3 rounded-xl border border-[#8C6239]/20 shadow-lg text-[10px] font-mono space-y-2">
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-[#D4C4B7]" /> Mesa Libre</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EAE0D5] border-2 border-[#8C6239]" /> Asignada (Incompleta)</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#8C6239] border-2 border-[#4A3320]" /> Llena</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-900" /> Sobrecupo</div>
+          </div>
+
           {decorations.map(d => (
-            <div key={d.id} className="absolute border border-black/20 flex items-center justify-center pointer-events-none"
-                 style={{ 
-                   left: `${d.pos_x}%`, top: `${d.pos_y}%`, 
-                   transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, 
-                   width: `${d.width}%`, height: `${d.height}%`,
-                   backgroundColor: d.bg_color || '#111111', zIndex: 5 
-                 }}>
-              <span className="text-xs font-mono font-bold text-black/60 text-center uppercase">{d.label}</span>
+            <div key={d.id} className="absolute border-2 border-[#8C6239]/40 bg-[#F5EFE6] rounded flex items-center justify-center pointer-events-none"
+                 style={{ left: `${d.pos_x}%`, top: `${d.pos_y}%`, transform: `translate(-50%, -50%) rotate(${d.rotation || 0}deg)`, width: `${d.width}%`, height: `${d.height}%`, zIndex: d.z_index || 10 }}>
+              <span className="text-xs font-serif font-bold text-[#6B4E31] text-center uppercase">{d.label}</span>
             </div>
           ))}
 
           {tables.map(t => {
             const occupants = people.filter(p => p.table_id === t.id);
-            const isFull = occupants.length >= t.capacity;
+            const isFull = occupants.length === t.capacity;
             const isOver = occupants.length > t.capacity;
-            const ringColor = isOver ? 'border-red-500' : isFull ? 'border-amber-500' : 'border-[#0E3D4D]';
-            const bgColor = isOver ? 'bg-red-500/90' : isFull ? 'bg-amber-500/90' : 'bg-[#165A72]';
+            const isPartial = occupants.length > 0 && occupants.length < t.capacity;
+
+            let bgColor = 'bg-white';
+            let borderColor = 'border-[#D4C4B7]';
+            let textColor = 'text-[#8C6239]';
+
+            if (isOver) { bgColor = 'bg-red-600'; borderColor = 'border-red-900'; textColor = 'text-white'; }
+            else if (isFull) { bgColor = 'bg-[#8C6239]'; borderColor = 'border-[#4A3320]'; textColor = 'text-white'; }
+            else if (isPartial) { bgColor = 'bg-[#EAE0D5]'; borderColor = 'border-[#8C6239]'; textColor = 'text-[#6B4E31]'; }
 
             return (
               <div key={t.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, t.id)} onClick={() => setSelectedTable(selectedTable === t.id ? null : t.id)}
-                   className={`absolute w-16 h-16 border-[3px] rounded-full flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-110 ${ringColor} ${bgColor}`}
-                   style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', zIndex: selectedTable === t.id ? 60 : 10 }}>
-                <span className="text-white font-serif font-bold text-lg pointer-events-none">{t.table_number}</span>
-                <span className="text-[9px] font-mono font-bold pointer-events-none text-white/80">{occupants.length}/{t.capacity}</span>
+                   className={`absolute w-[80px] h-[80px] border-4 rounded-full flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-110 ${bgColor} ${borderColor}`}
+                   style={{ left: `${t.pos_x}%`, top: `${t.pos_y}%`, transform: 'translate(-50%, -50%)', zIndex: selectedTable === t.id ? 200 : 150 }}>
+                
+                <span className={`font-serif font-bold text-2xl pointer-events-none ${textColor}`}>{t.table_number}</span>
+                <span className={`text-[9px] font-mono font-bold pointer-events-none ${isFull || isOver ? 'text-white/80' : 'text-[#8C6239]/80'}`}>{occupants.length}/{t.capacity}</span>
 
                 {selectedTable === t.id && (
-                  <div className="absolute top-full mt-3 w-48 md:w-64 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[100] cursor-default" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-full mt-3 w-48 md:w-64 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[300] cursor-default" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
                       <p className="text-xs text-amber-500 font-mono font-bold">MESA {t.table_number}</p>
                       <button onClick={() => setSelectedTable(null)} className="text-neutral-500 hover:text-white"><X size={14} /></button>
