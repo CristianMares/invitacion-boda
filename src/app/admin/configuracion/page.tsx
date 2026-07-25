@@ -24,6 +24,12 @@ export default function AdminConfiguracion() {
   const [whatsappInfo, setWhatsappInfo] = useState({
     template: '¡Hola {nombre}! Tu pase para la boda de {iniciales} está listo. Consulta tu código QR y mesa asignada aquí: {link}'
   });
+  const [whatsappApi, setWhatsappApi] = useState({
+    provider_url: '',
+    api_token: '',
+    instance_id: '',
+    enabled: false
+  });
   const [testPhone, setTestPhone] = useState('');
 
   useEffect(() => {
@@ -36,6 +42,7 @@ export default function AdminConfiguracion() {
         if (data.config.gift_registry) setGiftRegistry(data.config.gift_registry);
         if (data.config.itinerary) setItinerary(data.config.itinerary);
         if (data.config.whatsapp_info) setWhatsappInfo(data.config.whatsapp_info);
+        if (data.config.whatsapp_api_config) setWhatsappApi(data.config.whatsapp_api_config);
       }
       setLoading(false);
     });
@@ -100,6 +107,23 @@ export default function AdminConfiguracion() {
     window.open(url, '_blank');
   };
 
+  // Formato para previsualización de fecha en texto
+  const dateObj = new Date(weddingDate);
+  const formattedDateText = isNaN(dateObj.getTime())
+    ? ''
+    : dateObj.toLocaleDateString('es-MX', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+  const capitalizedDateText = formattedDateText
+    ? formattedDateText.charAt(0).toUpperCase() + formattedDateText.slice(1)
+    : '';
+
   if (loading) return <div className="h-full flex items-center justify-center text-amber-500 font-mono">Cargando CMS...</div>;
 
   return (
@@ -156,7 +180,7 @@ export default function AdminConfiguracion() {
           </div>
           <div>
             <label className="text-xs font-mono text-neutral-400 block mb-1">
-              Plantilla (Variables automáticas: <code className="text-amber-400">{'{nombre}'}</code>, <code className="text-amber-400">{'{iniciales}'}</code>, <code className="text-amber-400">{'{link}'}</code>):
+              Plantilla (Variables: <code className="text-amber-400">{'{nombre}'}</code>, <code className="text-amber-400">{'{iniciales}'}</code>, <code className="text-amber-400">{'{link}'}</code>):
             </label>
             <textarea 
               rows={3} 
@@ -181,6 +205,48 @@ export default function AdminConfiguracion() {
               <Send size={14} /> Probar Mensaje en WhatsApp
             </button>
           </div>
+        </section>
+
+        {/* GATEWAY DE WHATSAPP (SERVIDOR) */}
+        <section className="bg-neutral-950 p-6 rounded-2xl border border-white/10 space-y-4">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h3 className="font-serif text-lg text-amber-400 flex items-center gap-2">Gateway Envío Automático (Servidor)</h3>
+            <button onClick={() => saveConfigSection('whatsapp_api_config', whatsappApi)} disabled={savingKey === 'whatsapp_api_config'} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl text-xs flex items-center gap-1.5">
+              <Save size={14} /> Guardar
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 bg-black/60 p-3 rounded-xl border border-white/5">
+            <input 
+              type="checkbox" 
+              id="enable_api" 
+              checked={whatsappApi.enabled} 
+              onChange={(e) => setWhatsappApi({ ...whatsappApi, enabled: e.target.checked })} 
+              className="w-4 h-4 accent-amber-500 rounded" 
+            />
+            <label htmlFor="enable_api" className="text-xs font-mono text-neutral-300 cursor-pointer">
+              Activar envío automático en segundo plano (Requiere API de pago/Gateway)
+            </label>
+          </div>
+
+          {whatsappApi.enabled && (
+            <div className="space-y-3 pt-2">
+              <div>
+                <label className="text-[10px] font-mono text-neutral-500 block mb-1">URL Endpoint del Proveedor:</label>
+                <input type="text" placeholder="https://api.ultramsg.com/instanceXXXX/messages/chat" value={whatsappApi.provider_url} onChange={(e) => setWhatsappApi({ ...whatsappApi, provider_url: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" />
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-mono text-neutral-500 block mb-1">API Token / Key:</label>
+                  <input type="password" value={whatsappApi.api_token} onChange={(e) => setWhatsappApi({ ...whatsappApi, api_token: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-neutral-500 block mb-1">Instance ID:</label>
+                  <input type="text" value={whatsappApi.instance_id} onChange={(e) => setWhatsappApi({ ...whatsappApi, instance_id: e.target.value })} className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" />
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* 3. FECHA Y CUENTA REGRESIVA */}
@@ -400,6 +466,11 @@ export default function AdminConfiguracion() {
               {activePreviewModal === 'date' && (
                 <div className="text-center space-y-6 p-4">
                   <h4 className="text-amber-500 font-mono text-xs uppercase tracking-widest">El Gran Día</h4>
+                  {capitalizedDateText && (
+                    <p className="text-amber-400 font-serif text-xl italic">
+                      {capitalizedDateText}
+                    </p>
+                  )}
                   <Countdown targetDate={weddingDate} />
                   <CalendarButton weddingDate={weddingDate} title={`Boda de ${heroInfo.initials}`} location={`${venueInfo.name}, ${venueInfo.location}`} />
                 </div>
