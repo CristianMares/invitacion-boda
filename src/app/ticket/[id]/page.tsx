@@ -44,6 +44,14 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       return acc;
     }, {});
 
+    // ← NUEVO: asignaciones de nombres para el mapa
+    const memberAssignments = allMembers
+      .filter(m => m.table_id)
+      .map(m => ({
+        name: m.name,
+        tableName: tables.find(t => t.id === m.table_id)?.table_number?.toString() || '?'
+      }));
+
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 md:p-12 relative selection:bg-amber-500 selection:text-black">
         <div className="w-full max-w-5xl bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 my-auto">
@@ -93,7 +101,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
               {/* BARRIDO INTERACTIVO DEL MAPA */}
               {assignedTableIds.length > 0 && (
-                <VenueMap assignedTableIds={assignedTableIds} tables={tables as any} decorations={decorations as any} />
+                <VenueMap
+                  assignedTableIds={assignedTableIds}
+                  tables={tables as any}
+                  decorations={decorations as any}
+                  memberAssignments={memberAssignments}
+                />
               )}
             </div>
 

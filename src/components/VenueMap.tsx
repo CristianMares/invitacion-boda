@@ -5,8 +5,9 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 interface Table { id: string; table_number: number; pos_x: number; pos_y: number; capacity: number; }
 interface Decoration { id: string; label: string; pos_x: number; pos_y: number; width: number; height: number; rotation?: number; z_index?: number; }
+interface MemberAssignment { name: string; tableName: string; }
 
-export default function VenueMap({ assignedTableIds, tables, decorations }: { assignedTableIds: string[], tables: Table[], decorations: Decoration[] }) {
+export default function VenueMap({ assignedTableIds, tables, decorations, memberAssignments }: { assignedTableIds: string[], tables: Table[], decorations: Decoration[], memberAssignments?: MemberAssignment[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const transformRef = useRef<any>(null);
 
@@ -38,13 +39,24 @@ export default function VenueMap({ assignedTableIds, tables, decorations }: { as
       {isOpen && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[500] flex flex-col animate-in fade-in duration-300 overflow-hidden">
           
-          <div className="absolute top-4 left-4 right-4 z-[600] flex justify-between items-center pointer-events-none">
-            <div className="bg-neutral-900/90 backdrop-blur-md border border-white/10 px-5 py-3 rounded-2xl pointer-events-auto shadow-2xl">
+          {/* HEADER RESPONSIVO OPTIMIZADO PARA MÓVILES */}
+          <div className="p-4 z-[600] flex justify-between items-start gap-3 bg-neutral-900/90 border-b border-white/10 shadow-2xl">
+            <div className="space-y-1 overflow-hidden">
               <h3 className="text-amber-400 font-serif text-base font-bold">Croquis del Evento</h3>
-              <p className="text-xs text-neutral-300 font-mono">Mesa(s) asignada(s): <span className="text-white font-bold">{assignedTableNumbers}</span></p>
+              {memberAssignments && memberAssignments.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                  {memberAssignments.map((m, i) => (
+                    <span key={i} className="text-[10px] font-mono bg-black px-2 py-0.5 rounded border border-white/10 text-neutral-300">
+                      {m.name}: <strong className="text-amber-400">Mesa {m.tableName}</strong>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-300 font-mono">Mesa(s): <span className="text-white font-bold">{assignedTableNumbers}</span></p>
+              )}
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-3 bg-neutral-900/90 border border-white/10 rounded-full hover:bg-neutral-800 text-white pointer-events-auto shadow-2xl">
-              <X size={22} />
+            <button onClick={() => setIsOpen(false)} className="p-2.5 bg-neutral-800 border border-white/10 rounded-full hover:bg-neutral-700 text-white shrink-0">
+              <X size={20} />
             </button>
           </div>
 
@@ -74,7 +86,6 @@ export default function VenueMap({ assignedTableIds, tables, decorations }: { as
                           <div key={t.id} className={`absolute flex items-center justify-center rounded-full transition-all ${isAssigned ? 'z-[300]' : 'z-[150]'}`}
                                style={{ left: `calc(${t.pos_x}% - 28px)`, top: `calc(${t.pos_y}% - 28px)`, width: '56px', height: '56px' }}>
                             
-                            {/* ANIMACIÓN DORADA / AMBAR RESTAURADA PARA LA MESA ASIGNADA */}
                             {isAssigned && (
                               <>
                                 <div className="absolute inset-[-16px] bg-amber-500/20 rounded-full animate-pulse" />

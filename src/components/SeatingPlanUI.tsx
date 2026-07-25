@@ -24,8 +24,11 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
     const dragType = e.dataTransfer.getData('dragType');
 
     if (dragType === 'group') {
-      const membersToAssign = people.filter(p => p.group_id === dragId && p.table_id !== tableId);
-      setPeople(prev => prev.map(p => p.group_id === dragId ? { ...p, table_id: tableId } : p));
+      // SOLO MOVER MIEMBROS QUE NO TENGAN MESA ASIGNADA
+      const membersToAssign = people.filter(p => p.group_id === dragId && p.table_id === null);
+      if (membersToAssign.length === 0) return;
+
+      setPeople(prev => prev.map(p => (p.group_id === dragId && p.table_id === null) ? { ...p, table_id: tableId } : p));
       await Promise.all(membersToAssign.map(m => fetch('/api/admin/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personId: m.id, type: m.type, tableId }) })));
     } else {
       setPeople(prev => prev.map(p => p.id === dragId ? { ...p, table_id: tableId } : p));
@@ -51,28 +54,41 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {groupsInQueue.map(groupId => {
-            const members = unassigned.filter(p => p.group_id === groupId);
-            const titular = members.find(m => m.type === 'guest') || people.find(p => p.id === groupId);
+            const unassignedMembers = unassigned.filter(p => p.group_id === groupId);
+            const allGroupMembers = people.filter(p => p.group_id === groupId);
+            const mainGuest = allGroupMembers.find(p => p.type === 'guest');
+            const isMainGuestUnassigned = unassignedMembers.some(m => m.type === 'guest');
+
+            // Formatear Nombre del Grupo cuando el titular ya está en una mesa
+            let groupLabel = '';
+            if (isMainGuestUnassigned) {
+              groupLabel = mainGuest?.name || 'Grupo';
+            } else {
+              const cleanMainName = mainGuest?.name.replace(/\s*\(Inv:.*\)/, '') || 'Titular';
+              groupLabel = `Invitados de ${cleanMainName}`;
+            }
+
             const isExpanded = expandedGroups.includes(groupId);
+
             return (
               <div key={groupId} className="bg-black border border-white/5 rounded-xl overflow-hidden shadow-md">
                 <div className="flex items-stretch bg-neutral-900">
-                  <div draggable onDragStart={(e) => handleDragStart(e, groupId, 'group')} className="p-3 cursor-grab active:cursor-grabbing flex items-center justify-center hover:bg-amber-500 hover:text-black transition-colors">
+                  <div draggable onDragStart={(e) => handleDragStart(e, groupId, 'group')} className="p-3 cursor-grab active:cursor-grabbing flex items-center justify-center hover:bg-amber-500 hover:text-black transition-colors" title="Arrastrar todo el grupo pendiente">
                     <GripVertical size={16} className="pointer-events-none" />
                   </div>
                   <div onClick={() => toggleGroup(groupId)} className="flex-1 p-3 cursor-pointer flex justify-between items-center border-l border-white/5">
-                    <span className="text-sm font-bold text-white truncate max-w-[120px]">{titular?.name || 'Grupo'}</span>
+                    <span className="text-xs font-bold text-white truncate max-w-[140px]">{groupLabel}</span>
                     <div className="flex items-center gap-2 text-neutral-400">
-                      <span className="text-[10px] bg-black px-2 py-1 rounded font-mono">{members.length}</span>
+                      <span className="text-[10px] bg-black px-2 py-0.5 rounded font-mono text-amber-400">{unassignedMembers.length}</span>
                       <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
                 </div>
                 {isExpanded && (
-                  <div className="p-2 bg-[#0a0a0a] space-y-2 border-t border-white/5">
-                    {members.map(m => (
-                      <div key={m.id} draggable onDragStart={(e) => handleDragStart(e, m.id, m.type)} className="p-2 bg-neutral-900 border border-neutral-800 rounded flex justify-between items-center cursor-grab active:cursor-grabbing hover:border-amber-500/50">
-                        <span className="text-xs text-white truncate pointer-events-none">{m.name}</span>
+                  <div className="p-2 bg-[#0a0a0a] space-y-1.5 border-t border-white/5">
+                    {unassignedMembers.map(m => (
+                      <div key={m.id} draggable onDragStart={(e) => handleDragStart(e, m.id, m.type)} className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg flex justify-between items-center cursor-grab active:cursor-grabbing hover:border-amber-500/50">
+                        <span className="text-[11px] text-neutral-300 truncate pointer-events-none">{m.name}</span>
                       </div>
                     ))}
                   </div>
@@ -83,10 +99,8 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
         </div>
       </div>
 
-      {/* LIENZO DE MAPA CON LEYENDA SUPERIOR EXTERNA */}
+      {/* LIENZO DE MAPA DE ASIGNACIÓN */}
       <div className="flex-1 bg-[#050505] overflow-auto relative p-4 md:p-8 flex flex-col items-center">
-        
-        {/* LEYENDA FUERA DEL MAPA */}
         <div className="mb-4 flex flex-wrap gap-4 items-center justify-center bg-neutral-900/90 px-6 py-2.5 rounded-full border border-white/10 text-xs font-mono shadow-xl">
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-neutral-900 border border-neutral-700" /> Libre</div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500" /> Asignada</div>
@@ -125,7 +139,7 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
                 <span className={`text-[8px] font-mono font-bold pointer-events-none opacity-80 ${textColor}`}>{occupants.length}/{t.capacity}</span>
 
                 {selectedTable === t.id && (
-                  <div className="absolute top-full mt-3 w-48 md:w-64 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[300] cursor-default text-left" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-full mt-3 w-56 bg-neutral-900 border border-amber-500/50 p-4 rounded-xl shadow-2xl z-[300] cursor-default text-left" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
                       <p className="text-xs text-amber-500 font-mono font-bold">MESA {t.table_number}</p>
                       <button onClick={() => setSelectedTable(null)} className="text-neutral-500 hover:text-white"><X size={14} /></button>
@@ -134,7 +148,7 @@ export default function SeatingPlanUI({ initialPeople, tables, decorations }: { 
                       <div className="space-y-1.5 max-h-48 overflow-y-auto">
                         {occupants.map(o => (
                           <div key={o.id} className="flex justify-between items-center bg-black/50 p-2 rounded border border-white/5">
-                            <span className="text-[10px] md:text-xs text-white truncate max-w-[120px] font-medium">{o.name}</span>
+                            <span className="text-[10px] text-white truncate max-w-[130px] font-medium">{o.name}</span>
                             <button onClick={() => unassignPerson(o.id, o.type)} className="text-neutral-500 hover:text-red-500 p-1"><UserMinus size={14} /></button>
                           </div>
                         ))}
