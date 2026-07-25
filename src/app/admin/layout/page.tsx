@@ -1,6 +1,16 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Save, Plus, Trash2, BoxSelect, ArrowUp, ArrowDown, Layers } from 'lucide-react';
+import { Save, Plus, Trash2, BoxSelect, ArrowUp, ArrowDown } from 'lucide-react';
+
+const PRESET_COLORS = [
+  { name: 'Dorado / Madera', hex: '#8C6239' },
+  { name: 'Beige Claro', hex: '#D4C4B7' },
+  { name: 'Pergamino', hex: '#F5EFE6' },
+  { name: 'Gris Oscuro', hex: '#262626' },
+  { name: 'Negro Salón', hex: '#171717' },
+  { name: 'Verde Olivo', hex: '#2D3B2D' },
+  { name: 'Azul Noche', hex: '#1A2332' },
+];
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -16,7 +26,6 @@ export default function LayoutBuilder() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Arreglo de IDs seleccionados
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'tables' | 'decor'>('tables');
   
@@ -124,6 +133,14 @@ export default function LayoutBuilder() {
     setTimeout(() => { wasResizingRef.current = false; }, 100);
   };
 
+  const adjustZIndex = (id: string, delta: number) => {
+    setDecorations(prev => prev.map(d => {
+      if (d.id !== id) return d;
+      const currentZ = d.z_index || 10;
+      return { ...d, z_index: Math.max(1, currentZ + delta) };
+    }));
+  };
+
   const applyBatchDecorationChange = (key: string, value: any) => {
     setDecorations(prev => prev.map(d => selectedIds.includes(d.id) ? { ...d, [key]: value } : d));
   };
@@ -164,22 +181,20 @@ export default function LayoutBuilder() {
           <button onClick={() => setActiveTab('decor')} className={`flex-1 py-4 text-xs font-bold uppercase transition-all ${activeTab === 'decor' ? 'bg-amber-500/10 text-amber-500 border-b-2 border-amber-500' : 'text-neutral-500'}`}>Áreas</button>
         </div>
 
-        {/* BARRAS Y CONTROLES DE EDICIÓN MULTIPLE */}
+        {/* MÚLTIPLE SELECCIÓN */}
         {selectedIds.length > 1 && (
           <div className="p-3 bg-amber-500/10 border-b border-amber-500/30 text-xs space-y-2">
             <div className="flex justify-between items-center text-amber-400 font-mono font-bold">
-              <span>{selectedIds.length} Elementos Selecciónados</span>
+              <span>{selectedIds.length} Objetos Seleccionados</span>
               <button onClick={() => setSelectedIds([])} className="text-neutral-400 hover:text-white text-[10px]">Desmarcar</button>
             </div>
             {activeTab === 'decor' && (
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div>
-                  <span className="text-[9px] text-neutral-400">CAMBIAR COLOR LOTE</span>
-                  <input type="color" onChange={(e) => applyBatchDecorationChange('bg_color', e.target.value)} className="w-full h-6 bg-transparent cursor-pointer rounded" />
-                </div>
-                <div>
-                  <span className="text-[9px] text-neutral-400">ROTACIÓN LOTE (°)</span>
-                  <input type="number" onChange={(e) => applyBatchDecorationChange('rotation', Number(e.target.value))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" />
+              <div className="space-y-2 pt-1">
+                <span className="text-[9px] text-neutral-400 block">PALETA RÁPIDA LOTE</span>
+                <div className="flex gap-1.5 flex-wrap">
+                  {PRESET_COLORS.map(c => (
+                    <button key={c.hex} onClick={() => applyBatchDecorationChange('bg_color', c.hex)} className="w-5 h-5 rounded-full border border-white/20 hover:scale-125 transition-transform" style={{ backgroundColor: c.hex }} title={c.name} />
+                  ))}
                 </div>
               </div>
             )}
@@ -213,13 +228,36 @@ export default function LayoutBuilder() {
                       <input type="text" value={d.label} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, label: e.target.value } : dec))} className="bg-transparent text-xs font-bold w-3/4 outline-none border-b border-neutral-800 focus:border-amber-500" onClick={(e) => e.stopPropagation()} />
                       <button onClick={(e) => { e.stopPropagation(); setDecorations(decorations.filter(x => x.id !== d.id)); setSelectedIds(prev => prev.filter(x => x !== d.id)); }} className="text-neutral-600 hover:text-red-500"><Trash2 size={14} /></button>
                     </div>
+
                     {isSelected && selectedIds.length === 1 && (
                       <div className="space-y-3 pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div><span className="text-[9px] text-neutral-500">ANCHO (%)</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
-                          <div><span className="text-[9px] text-neutral-500">ALTO (%)</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
-                          <div><span className="text-[9px] text-neutral-500">ROTACIÓN (°)</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
-                          <div><span className="text-[9px] text-neutral-500">COLOR</span><input type="color" value={d.bg_color || '#D4C4B7'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-full h-6 bg-transparent cursor-pointer rounded" /></div>
+                        {/* COLOR PRESETS */}
+                        <div>
+                          <span className="text-[9px] text-neutral-400 block mb-1">COLOR RÁPIDO:</span>
+                          <div className="flex gap-1.5 flex-wrap mb-2">
+                            {PRESET_COLORS.map(c => (
+                              <button key={c.hex} onClick={() => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: c.hex } : dec))} className="w-5 h-5 rounded-full border border-white/20 hover:scale-125 transition-transform" style={{ backgroundColor: c.hex }} title={c.name} />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-neutral-500">Selector Libre:</span>
+                            <input type="color" value={d.bg_color || '#D4C4B7'} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, bg_color: e.target.value } : dec))} className="w-8 h-5 bg-transparent cursor-pointer rounded" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div><span className="text-[9px] text-neutral-500">ANCHO %</span><input type="number" value={d.width} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, width: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                          <div><span className="text-[9px] text-neutral-500">ALTO %</span><input type="number" value={d.height} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, height: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                          <div><span className="text-[9px] text-neutral-500">ROTACIÓN°</span><input type="number" value={d.rotation || 0} onChange={(e) => setDecorations(decorations.map(dec => dec.id === d.id ? { ...dec, rotation: Number(e.target.value) } : dec))} className="w-full bg-neutral-900 text-xs p-1 rounded text-white" /></div>
+                        </div>
+
+                        {/* CONTROL DE CAPA / PROFUNDIDAD */}
+                        <div className="flex items-center justify-between bg-neutral-900 p-2 rounded-lg border border-neutral-800">
+                          <span className="text-[10px] text-neutral-400 font-mono">Capa (Z-Index): {d.z_index || 10}</span>
+                          <div className="flex gap-1">
+                            <button onClick={() => adjustZIndex(d.id, -1)} title="Atrás" className="p-1 bg-black rounded hover:bg-neutral-800 text-neutral-300"><ArrowDown size={12} /></button>
+                            <button onClick={() => adjustZIndex(d.id, 1)} title="Frente" className="p-1 bg-black rounded hover:bg-neutral-800 text-neutral-300"><ArrowUp size={12} /></button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -248,7 +286,7 @@ export default function LayoutBuilder() {
               setSelectedIds([]);
             }
           }}
-          className="w-[1000px] h-[650px] bg-[#FAF7F2] border-2 border-neutral-800 rounded-2xl relative shadow-2xl flex-shrink-0 overflow-hidden"
+          className="w-[1000px] h-[650px] bg-[#0A0A0A] border-2 border-neutral-800 rounded-2xl relative shadow-2xl flex-shrink-0 overflow-hidden"
         >
           {decorations.map(d => {
             const isSelected = selectedIds.includes(d.id);
@@ -257,7 +295,7 @@ export default function LayoutBuilder() {
                 key={d.id}
                 onPointerDown={(e) => handlePointerDown(d.id, 'decor', e)}
                 onClick={(e) => handleSelectObject(d.id, 'decor', e)}
-                className={`absolute rounded flex items-center justify-center cursor-grab active:cursor-grabbing ${
+                className={`absolute rounded flex items-center justify-center cursor-grab active:cursor-grabbing border border-white/10 ${
                   isSelected ? 'ring-2 ring-amber-500' : ''
                 }`}
                 style={{
@@ -292,7 +330,7 @@ export default function LayoutBuilder() {
                 key={t.id}
                 onPointerDown={(e) => handlePointerDown(t.id, 'table', e)}
                 onClick={(e) => handleSelectObject(t.id, 'table', e)}
-                className={`absolute w-14 h-14 bg-[#165A72] border-2 border-[#0E3D4D] rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing shadow-md ${
+                className={`absolute w-14 h-14 bg-[#8C6239] border-2 border-[#4A3320] rounded-full flex flex-col items-center justify-center cursor-grab active:cursor-grabbing shadow-md ${
                   isSelected ? 'ring-4 ring-amber-500 scale-110 z-[200]' : 'z-[150]'
                 }`}
                 style={{
