@@ -1,29 +1,23 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Gift, CreditCard, ExternalLink, Copy, CheckCircle, RotateCw } from 'lucide-react';
 
-export default function GiftRegistry() {
+interface GiftRegistryConfig {
+  bank: { bank_name: string; holder: string; clabe: string };
+  links: Array<{ name: string; url: string }>;
+}
+
+export default function GiftRegistry({ config }: { config?: GiftRegistryConfig }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [config, setConfig] = useState({
-    bank: { bank_name: 'BBVA', holder: 'Cristian Mares', clabe: '012180012345678901' },
-    links: [
-      { name: 'Amazon', url: 'https://www.amazon.com.mx' },
-      { name: 'Liverpool', url: 'https://mesaderegalos.liverpool.com.mx' }
-    ]
-  });
 
-  useEffect(() => {
-    fetch('/api/admin/config').then(res => res.json()).then(data => {
-      if (data.success && data.config?.gift_registry) {
-        setConfig(data.config.gift_registry);
-      }
-    });
-  }, []);
+  const bank = config?.bank;
+  const links = config?.links;
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(config.bank.clabe);
+    if (!bank.clabe) return;
+    navigator.clipboard.writeText(bank.clabe);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -61,15 +55,15 @@ export default function GiftRegistry() {
 
           <div className="space-y-4 my-auto">
             {/* TRANSFERENCIA BANCARIA */}
-            {config.bank?.clabe && (
+            {bank.clabe && (
               <div className="bg-black/60 p-3.5 rounded-2xl border border-white/5 space-y-1.5 text-left">
                 <div className="flex items-center gap-2">
                   <CreditCard size={14} className="text-amber-500" />
                   <span className="text-xs font-bold text-neutral-200">Transferencia Bancaria</span>
                 </div>
-                <p className="text-[11px] text-neutral-400 font-mono">{config.bank.bank_name} • {config.bank.holder}</p>
+                <p className="text-[11px] text-neutral-400 font-mono">{bank.bank_name} • {bank.holder}</p>
                 <div className="flex items-center justify-between bg-neutral-900 p-2 rounded-xl border border-neutral-800">
-                  <span className="text-xs font-mono text-amber-400 tracking-wider">{config.bank.clabe}</span>
+                  <span className="text-xs font-mono text-amber-400 tracking-wider">{bank.clabe}</span>
                   <button onClick={handleCopy} className="p-1 hover:text-white transition-colors">
                     {copied ? <CheckCircle size={14} className="text-emerald-400" /> : <Copy size={14} className="text-neutral-400" />}
                   </button>
@@ -78,11 +72,11 @@ export default function GiftRegistry() {
             )}
 
             {/* LINKS EXTERNOS DINÁMICOS */}
-            {config.links && config.links.length > 0 && (
+            {links && links.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[10px] uppercase tracking-widest font-mono text-neutral-500 text-left">Listas de Deseos</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {config.links.map((link, idx) => (
+                  {links.map((link, idx) => (
                     <a 
                       key={idx}
                       href={link.url} 

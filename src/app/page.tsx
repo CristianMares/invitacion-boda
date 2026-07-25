@@ -1,4 +1,5 @@
-﻿import { MapPin } from 'lucide-react';
+﻿import { neon } from '@neondatabase/serverless';
+import { MapPin } from 'lucide-react';
 import Image from 'next/image';
 import Countdown from '@/components/Countdown';
 import RSVP from '@/components/RSVP';
@@ -8,7 +9,21 @@ import GiftRegistry from '@/components/GiftRegistry';
 import FadeIn from '@/components/FadeIn';
 import CalendarButton from '@/components/CalendarButton';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  const sql = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL!);
+  const configRows = await sql`SELECT key, value FROM event_config`;
+
+  const configMap: Record<string, any> = {};
+  configRows.forEach(r => configMap[r.key] = r.value);
+
+  const weddingDate = configMap.wedding_date;
+  const venueInfo = configMap.venue_info;
+  const dressCode = configMap.dress_code;
+  const giftRegistry = configMap.gift_registry;
+  const itinerary = configMap.itinerary;
+
   return (
     <main className="min-h-screen bg-black text-neutral-200 font-sans selection:bg-amber-500 selection:text-black pb-20">
       
@@ -25,7 +40,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black"></div>
         <FadeIn direction="down">
           <div className="relative z-10 text-center px-4 space-y-6">
-            <h3 className="text-amber-500 tracking-[0.4em] uppercase text-xs font-bold">Nuestra Boda</h3>
+            <h3 className="text-amber-500 tracking-[0.4em] uppercase text-xs font-bold font-mono">Nuestra Boda</h3>
             <h1 className="text-7xl md:text-9xl font-serif text-white drop-shadow-2xl">M & X</h1>
             <p className="text-xl italic text-neutral-400 mt-4 font-light">Nos casamos, y queremos que seas parte de nuestra historia.</p>
           </div>
@@ -37,32 +52,32 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 to-black pointer-events-none"></div>
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <FadeIn>
-            <h2 className="text-3xl font-serif mb-8 text-white tracking-widest uppercase text-sm">El Gran Día</h2>
-            <Countdown targetDate="2026-12-31T20:00:00" />
+            <h2 className="text-3xl font-serif mb-8 text-white tracking-widest uppercase text-sm font-mono">El Gran Día</h2>
+            <Countdown targetDate={weddingDate} />
             <CalendarButton />
           </FadeIn>
         </div>
       </section>
 
-      {/* ITINERARIO */}
+      {/* ITINERARIO DINÁMICO */}
       <section className="py-24 px-4 bg-neutral-950 overflow-hidden border-t border-white/5">
         <FadeIn>
           <div className="max-w-4xl mx-auto text-center mb-16">
             <h2 className="text-4xl font-serif text-white">Itinerario</h2>
             <div className="w-24 h-1 bg-amber-500/50 mx-auto mt-6 rounded-full"></div>
           </div>
-          <Timeline />
+          <Timeline events={itinerary} />
         </FadeIn>
       </section>
 
-      {/* DRESS CODE */}
+      {/* DRESS CODE DINÁMICO */}
       <section className="py-24 px-4 bg-black overflow-hidden border-t border-white/5">
         <FadeIn direction="up">
-          <DressCode />
+          <DressCode config={dressCode} />
         </FadeIn>
       </section>
 
-      {/* RECEPCIÓN Y REGALOS */}
+      {/* RECEPCIÓN Y MESA DE REGALOS DINÁMICA */}
       <section className="py-24 px-4 bg-neutral-950 overflow-hidden border-t border-white/5 relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-96 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 relative z-10">
@@ -72,25 +87,29 @@ export default function Home() {
                 <MapPin size={32} />
               </div>
               <h3 className="text-3xl font-serif text-white">Recepción</h3>
-              <p className="text-neutral-400">Hacienda Las Rosas<br/>León, Guanajuato</p>
-              <a 
-                href="https://maps.google.com/?q=Hacienda+Las+Rosas+Leon+Guanajuato" 
-                target="_blank" 
-                rel="noreferrer"
-                className="mt-4 px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-neutral-200 transition-colors inline-flex items-center gap-2"
-              >
-                Ver en Maps &rarr;
-              </a>
+              <p className="text-neutral-400 font-sans leading-relaxed">
+                {venueInfo.name}<br/>{venueInfo.location}
+              </p>
+              {venueInfo.maps_url && (
+                <a 
+                  href={venueInfo.maps_url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="mt-4 px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-neutral-200 transition-colors inline-flex items-center gap-2 text-xs uppercase tracking-wider"
+                >
+                  Ver en Maps &rarr;
+                </a>
+              )}
             </div>
           </FadeIn>
           
           <FadeIn direction="left" delay={0.4}>
-            <GiftRegistry />
+            <GiftRegistry config={giftRegistry} />
           </FadeIn>
         </div>
       </section>
 
-      {/* RSVP (SOLICITUD) */}
+      {/* RSVP */}
       <section className="py-32 px-4 bg-black text-white text-center overflow-hidden relative border-t border-white/5">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-amber-900/20 via-black to-black pointer-events-none"></div>
         <FadeIn>

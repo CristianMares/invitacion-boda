@@ -1,12 +1,14 @@
 ﻿import { Clock } from 'lucide-react';
 
-const events = [
-  { time: '18:00', title: 'Ceremonia Religiosa', desc: 'Templo Expiatorio' },
-  { time: '19:30', title: 'Cóctel de Bienvenida', desc: 'Jardines de la Hacienda' },
-  { time: '20:30', title: 'Recepción y Cena', desc: 'Salón Principal' }
-];
+interface EventItem {
+  time: string;
+  title: string;
+  desc: string;
+}
 
-export default function Timeline() {
+export default function Timeline({ events }: { events: EventItem[] }) {
+  if (!events || events.length === 0) return <p className="text-center text-neutral-500 font-mono text-xs">Itinerario por definir.</p>;
+
   return (
     <div className="max-w-2xl mx-auto space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-amber-500/50 before:to-transparent">
       {events.map((event, i) => (
@@ -17,7 +19,7 @@ export default function Timeline() {
           <div className="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-neutral-900/50 backdrop-blur-sm p-6 rounded-3xl border border-white/5 hover:border-amber-500/30 transition-colors">
             <p className="text-amber-500 font-mono text-sm mb-1">{event.time}</p>
             <h4 className="font-bold text-xl font-serif text-white mb-2">{event.title}</h4>
-            <p className="text-sm text-neutral-400">{event.desc}</p>
+            <p className="text-sm text-neutral-400 font-sans">{event.desc}</p>
           </div>
         </div>
       ))}
